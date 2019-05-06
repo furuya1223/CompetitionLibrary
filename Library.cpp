@@ -1,549 +1,234 @@
-/*
-std::ifstream in("input.txt");
-std::cin.rdbuf(in.rdbuf());
-ofstream ofs("output.txt");
-cout.rdbuf(ofs.rdbuf());
+#include "header.hpp"
 
-int digitSum(int n) {
-	int sum = 0;
-	string str = to_string(n);
-	for (auto c : str) {
-		sum += c - '0';
-	}
-	return sum;
+int digit_sum(long long n, long long b) {
+    int sum = 0;
+    while (n > 0) {
+        sum += n % b;
+        n /= b;
+    }
+    return sum;
 }
 
 double dist(double x1, double y1, double x2, double y2) {
-	return sqrt((x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2));
+    return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
 
-double combi(ll n, ll r) {
-	int i;
-	double p = 1;
-	for (i = 1; i <= r; i++)
-		p = (double)p*(n - i + 1) / i;
-	return p;
+double combi(long long n, long long r) {
+    int i;
+    double p = 1;
+    for (i = 1; i <= r; i++) p = (double)p * (n - i + 1) / i;
+    return p;
 }
 
-ll powMod(ll x, ll n, ll mod) {
-	ll res = 1;
-	while (n > 0) {
-		if (n & 1) res = res * x % mod;
-		x = x * x % mod;
-		n >>= 1;
-	}
-	return res;
+long long powMod(long long x, long long n, long long mod) {
+    long long res = 1;
+    while (n > 0) {
+        if (n & 1) res = res * x % mod;
+        x = x * x % mod;
+        n >>= 1;
+    }
+    return res;
 }
 
-// Å‘åŒö–ñ”
-int gcd(int a, int b)
-{
-	if (b == 0) return a;
-	else return gcd(b, a % b);
+// æœ€å¤§å…¬ç´„æ•°
+int gcd(int a, int b) {
+    if (b == 0)
+        return a;
+    else
+        return gcd(b, a % b);
 }
 
+// éšä¹—ãƒ»çµ„ã¿åˆã‚ã›ã®ãƒ¢ã‚¸ãƒ¥ãƒ©é€†æ•°
+class FactorialMod {
+    // ãƒ¢ã‚¸ãƒ¥ãƒ©é€†æ•°ã‚’æ±‚ã‚ã‚‹(modãŒç´ æ•°ã¨ä»®å®š)
+    void ModInv() {
+        inv[0] = 0;
+        inv[1] = 1;
+        for (int i = 2; i <= n; i++) {
+            inv[i] = mod - ((mod / i) * inv[mod % i] % mod);
+        }
+    }
 
-// ƒ‚ƒWƒ…ƒ‰‹t”‚ğ‹‚ß‚é(mod‚ª‘f”‚Æ‰¼’è)
-void ModInv(int n, vector<ll> &inv, int mod)
-{
-	inv[0] = 0;
-	inv[1] = 1;
-	for (int i = 2; i <= n; i++)
-	{
-		inv[i] = mod - ((mod / i) * inv[mod % i] % mod);
-	}
+    // n!ã‚’modã§å‰²ã£ãŸä½™ã‚Š
+    void FacInv() {
+        fac[0] = facinv[0] = 1;
+        for (int i = 1; i <= n; i++) {
+            fac[i] = (fac[i - 1] * i) % mod;
+            facinv[i] = (facinv[i - 1] * (int)inv[i]) % mod;
+        }
+    }
+
+  public:
+    int n;
+    int mod;
+    vector<long long> inv;
+    vector<long long> fac;
+    vector<long long> facinv;
+
+    FactorialMod(int _n, int _mod)
+        : n(_n), mod(_mod), inv(vector<long long>(_n + 1)),
+          fac(vector<long long>(_n + 1)), facinv(vector<long long>(_n + 1)) {
+        ModInv();
+        FacInv();
+    }
+
+    ll CombiMod(int r, int k) {
+        if (r == 0 && k == 0) return 1;
+        if (r <= 0 || k < 0 || k > r) return 0;
+        if (k == 0) return 1;
+
+        return (((fac[r] * facinv[k]) % mod) * facinv[r - k]) % mod;
+    }
+};
+
+// åº§æ¨™åœ§ç¸®
+int compress(vector<int> x, map<int, int> &zip, vector<int> &unzip) {
+    sort(x.begin(), x.end());
+    x.erase(unique(x.begin(), x.end()), x.end());
+    for (int i = 0; i < x.size(); i++) {
+        zip[x[i]] = i;
+        unzip[i] = x[i];
+    }
+    return x.size();
 }
 
-// n!‚ğmod‚ÅŠ„‚Á‚½—]‚è
-void FacInv(int n, vector<ll> &inv, vector<ll> &fac, vector<ll> &facInv, int mod)
-{
-	fac[0] = facInv[0] = 1;
-	for (int i = 1; i <= n; i++)
-	{
-		fac[i] = (fac[i - 1] * i) % mod;
-		facInv[i] = (facInv[i - 1] * (int)inv[i]) % mod;
-	}
+vector<int> eratosthenes(int n) {
+    vector<bool> is_prime(n + 1, true);
+    is_prime[0] = is_prime[1] = false;
+    repr(i, 2, n + 1) {
+        if (!is_prime[i]) continue;
+        repr(j, 2, n / i + 1) {
+            is_prime[i * j] = false;
+        }
+    }
+    vector<int> prime;
+    rep(i, n + 1) {
+        if (is_prime[i]) prime.push_back(i);
+    }
+    return prime;
 }
-
-// nCk‚ğmod‚ÅŠ„‚Á‚½—]‚è‚ğ‹‚ß‚éBmod‘f”ŒÀ’è
-// ModInv()‚ÆFacInv()‚ª•K—v
-ll CombiMod(int n, int k, int mod)
-{
-	if (n == 0 && k == 0) return 1;
-	if (n <= 0 || k < 0 || k > n) return 0;
-	if (k == 0) return 1;
-
-	vector<ll> inv(n + 1);
-	vector<ll> fac(n + 1);
-	vector<ll> facInv(n + 1);
-
-	ModInv(n, inv, mod);
-	FacInv(n, inv, fac, facInv, mod);
-	return (((fac[n] * facInv[k]) % mod) * facInv[n - k]) % mod;
-}
-
-// À•Wˆ³k
-int compress(vector<int> x, map<int,int> &zip, vi &unzip) {
-	sort(x.begin(), x.end());
-	x.erase(unique(x.begin(), x.end()), x.end());
-	for (int i = 0; i < x.size(); i++) {
-		zip[x[i]] = i;
-		unzip[i] = x[i];
-	}
-	return x.size();
+int divisor_num(long long n, vector<int> &prime) {
+    if (n == 0) return 0;
+    if (prime.size() == 0) {
+        prime = eratosthenes((int)sqrt(n));
+    }
+    int ans = 1;
+    for (auto p : prime) {
+        int s = 0;
+        while (n % p == 0) {
+            s++;
+            n /= p;
+        }
+        ans *= s + 1;
+    }
+    return ans;
 }
 
 int popcount(int bits) {
-	bits = (bits & 0x55555555) + (bits >> 1 & 0x55555555);
-	bits = (bits & 0x33333333) + (bits >> 2 & 0x33333333);
-	bits = (bits & 0x0f0f0f0f) + (bits >> 4 & 0x0f0f0f0f);
-	bits = (bits & 0x00ff00ff) + (bits >> 8 & 0x00ff00ff);
-	return (bits & 0x0000ffff) + (bits >> 16 & 0x0000ffff);
+    bits = (bits & 0x55555555) + (bits >> 1 & 0x55555555);
+    bits = (bits & 0x33333333) + (bits >> 2 & 0x33333333);
+    bits = (bits & 0x0f0f0f0f) + (bits >> 4 & 0x0f0f0f0f);
+    bits = (bits & 0x00ff00ff) + (bits >> 8 & 0x00ff00ff);
+    return (bits & 0x0000ffff) + (bits >> 16 & 0x0000ffff);
 }
 
-
-template<typename T>
+template <typename T>
 struct cumsum {
-	vector<long long> data;
-	
-	cumsum(vector<T> a) {
-		data = vector<long long>(a.size() + 1, 0);
-		for (size_t i = 0; i < a.size(); i++) {
-			data[i + 1] = data[i] + a[i];
-		}
-	}
+    vector<long long> data;
 
-	long long calculate(int l, int r) {
-		if (l > r)return 0;
-		l = min<int>(data.size() - 1, max<int>(0, l));
-		r = min<int>(data.size() - 1, max<int>(0, r));
-		return data[r] - data[l];
-	}
-};
+    cumsum(vector<T> a) {
+        data = vector<long long>(a.size() + 1, 0);
+        for (size_t i = 0; i < a.size(); i++) {
+            data[i + 1] = data[i] + a[i];
+        }
+    }
 
-class SegTree {
-public:
-	int n, height;
-	vector<ll> dat;
-
-	ll def = 0;
-	ll operation(ll a, ll b) {
-		return a + b;
-	}
-
-	// ‰Šú‰»i_n‚Í•K—v‚È—v‘f”j
-	SegTree(int _n) {
-		n = 1;
-		height = 1;
-		while (n < _n) {
-			n *= 2;
-			height++;
-		}
-		dat = vector<ll>(2 * n - 1, def);
-	}
-
-	// êŠi(0-indexed)‚Éx‚ğ‘«‚·
-	void add(int i, ll x) {
-		i += n - 1;
-		dat[i] += x;
-		while (i > 0) {
-			i = (i - 1) / 2;
-			dat[i] += x;
-		}
-	}
-
-	// êŠi(0-indexed)‚Ì’l‚ğx‚ÉXV
-	void change(int i, ll x) {
-		i += n - 1;
-		dat[i] = x;
-		while (i > 0) {
-			i = (i - 1) / 2;
-			dat[i] = operation(dat[i * 2 + 1], dat[i * 2 + 2]);
-		}
-	}
-
-	// ‹æŠÔ[a,b)‚Ì‘˜aBƒm[ƒhk=[l,r)‚É’…–Ú‚µ‚Ä‚¢‚éB
-	ll _query(int a, int b, int k, int l, int r) {
-		if (r <= a || b <= l)return def;  // Œğ·‚µ‚È‚¢
-		if (a <= l && r <= b)return dat[k];   // a,l,r,b‚Ì‡‚ÅŠ®‘S‚ÉŠÜ‚Ü‚ê‚é
-		else {
-			ll c1 = _query(a, b, 2 * k + 1, l, (l + r) / 2);    // ¶‚Ìq
-			ll c2 = _query(a, b, 2 * k + 2, (l + r) / 2, r);    // ‰E‚Ìq
-			return operation(c1, c2);
-		}
-	}
-
-	// “à•”ƒNƒGƒŠ_query()‚ğŒÄ‚Ño‚·
-	ll query(int a, int b) {
-		return _query(a, b, 0, 0, n);
-	}
-};
-
-// ‹æŠÔ“h‚è‚Â‚Ô‚µRMQŒ^
-class LazySegTree {
-public:
-	int n;
-	vector<ll> dat;
-	vector<ll> lazy;
-	vector<int> depth;
-	vector<int> width;
-	const int NIL = -INF;
-
-	ll def = INT32_MAX;
-	ll operation(ll a, ll b) {
-		return min(a, b);
-	}
-
-	// ‰Šú‰»i_n‚Í•K—v‚È—v‘f”j
-	LazySegTree(int _n) {
-		n = 1;
-		while (n < _n) {
-			n *= 2;
-		}
-		dat = vector<ll>(2 * n - 1, def);
-		lazy = vector<ll>(2 * n - 1, NIL);
-		depth = vector<int>(2 * n - 1);
-		width = vector<int>(2 * n - 1);
-		depth[0] = 0;
-		width[0] = n;
-		repl(i, 1, 2 * n - 1) {
-			depth[i] = depth[(i - 1) / 2] + 1;
-			width[i] = width[(i - 1) / 2] / 2;
-		}
-	}
-
-	// ƒcƒŠ[ã‚Ìƒm[ƒhk‚ÉLazy’lv‚ğƒZƒbƒg
-	void setLazy(int k, int v) {
-		// “h‚è‚Â‚Ô‚µ
-		lazy[k] = v;
-
-		// min,max‚Ìê‡
-		dat[k] = v;
-
-		// sum‚Ìê‡
-		//dat[k] = lazy[k] * width[k];
-	}
-
-	void push(int k) {
-		if (lazy[k] == NIL)return;
-		setLazy(k * 2 + 1, lazy[k]);
-		setLazy(k * 2 + 2, lazy[k]);
-		lazy[k] = NIL;
-	}
-
-	// ‹æŠÔ[a,b)‚ğv‚Å“h‚è‚Â‚Ô‚·
-	void fill(int a, int b, int v, int k = 0, int l = 0, int r = -1) {
-		if (r == -1)r = n;
-		if (r <= a || b <= l)return;  // Œğ·‚µ‚È‚¢
-		if (a <= l && r <= b) {   // a,l,r,b‚Ì‡‚ÅŠ®‘S‚ÉŠÜ‚Ü‚ê‚é
-			setLazy(k, v);
-			return;
-		}
-
-		push(k);
-
-		fill(a, b, v, 2 * k + 1, l, (l + r) / 2);    // ¶‚Ìq
-		fill(a, b, v, 2 * k + 2, (l + r) / 2, r);    // ‰E‚Ìq
-
-		dat[k] = operation(dat[k * 2 + 1], dat[k * 2 + 2]);
-	}
-
-	// êŠi(0-indexed)‚Éx‚ğ‘«‚·
-	void add(int i, ll x) {
-		i += n - 1;
-		dat[i] += x;
-		while (i > 0) {
-			i = (i - 1) / 2;
-			dat[i] += x;
-		}
-	}
-
-	// êŠi(0-indexed)‚Ì’l‚ğx‚ÉXV
-	void change(int i, ll x) {
-		i += n - 1;
-		dat[i] = x;
-		while (i > 0) {
-			i = (i - 1) / 2;
-			dat[i] = operation(dat[i * 2 + 1], dat[i * 2 + 2]);
-		}
-	}
-
-	// ‹æŠÔ[a,b)‚Ì‘˜aBƒm[ƒhk=[l,r)‚É’…–Ú‚µ‚Ä‚¢‚éB
-	ll _query(int a, int b, int k, int l, int r) {
-		if (r <= a || b <= l)return def;  // Œğ·‚µ‚È‚¢
-		if (a <= l && r <= b)return dat[k];   // a,l,r,b‚Ì‡‚ÅŠ®‘S‚ÉŠÜ‚Ü‚ê‚é
-
-		push(k);
-
-		ll c1 = _query(a, b, 2 * k + 1, l, (l + r) / 2);    // ¶‚Ìq
-		ll c2 = _query(a, b, 2 * k + 2, (l + r) / 2, r);    // ‰E‚Ìq
-		return operation(c1, c2);
-	}
-
-	// “à•”ƒNƒGƒŠ_query()‚ğŒÄ‚Ño‚·
-	ll query(int a, int b) {
-		return _query(a, b, 0, 0, n);
-	}
-
-	ll operator[](int i) {
-		//return dat[i + n - 1];
-		return query(i, i + 1);
-	}
-};
-
-// ‹æŠÔ‰ÁZ‹æŠÔ˜aŒ^
-class LazySegTree {
-public:
-	int n;
-	vector<ll> dat;
-	vector<ll> lazy;
-	vector<int> depth;
-	vector<int> width;
-	const int NIL = -INF;
-
-	ll def = 0;
-	ll operation(ll a, ll b) {
-		return a + b;
-	}
-
-	// ‰Šú‰»i_n‚Í•K—v‚È—v‘f”j
-	LazySegTree(int _n) {
-		n = 1;
-		while (n < _n) {
-			n *= 2;
-		}
-		dat = vector<ll>(2 * n - 1, def);
-		lazy = vector<ll>(2 * n - 1, NIL);
-		depth = vector<int>(2 * n - 1);
-		width = vector<int>(2 * n - 1);
-		depth[0] = 0;
-		width[0] = n;
-		repl(i, 1, 2 * n - 1) {
-			depth[i] = depth[(i - 1) / 2] + 1;
-			width[i] = width[(i - 1) / 2] / 2;
-		}
-	}
-
-	// ƒcƒŠ[ã‚Ìƒm[ƒhk‚ÉLazy’lv‚ğƒZƒbƒg
-	void setLazy(int k, ll v) {
-		if (lazy[k] == NIL) {
-			lazy[k] = v;
-		}
-		else {
-			lazy[k] += v;
-		}
-
-		// min,max‚Ìê‡
-		//dat[k] += v;
-
-		// sum‚Ìê‡
-		dat[k] += v * width[k];
-	}
-
-	void push(int k) {
-		//cout << "push: " << k << endl;
-		if (lazy[k] == NIL)return;
-		setLazy(k * 2 + 1, lazy[k]);
-		setLazy(k * 2 + 2, lazy[k]);
-		lazy[k] = NIL;
-	}
-
-	// ‹æŠÔ[a,b)‚Év‚ğ‘«‚·
-	void rangeAdd(int a, int b, ll v, int k = 0, int l = 0, int r = -1) {
-		if (r == -1)r = n;
-		if (r <= a || b <= l)return;  // Œğ·‚µ‚È‚¢
-		if (a <= l && r <= b) {   // a,l,r,b‚Ì‡‚ÅŠ®‘S‚ÉŠÜ‚Ü‚ê‚é
-			setLazy(k, v);
-			return;
-		}
-
-		push(k);
-
-		rangeAdd(a, b, v, 2 * k + 1, l, (l + r) / 2);    // ¶‚Ìq
-		rangeAdd(a, b, v, 2 * k + 2, (l + r) / 2, r);    // ‰E‚Ìq
-
-		dat[k] = operation(dat[k * 2 + 1], dat[k * 2 + 2]);
-	}
-
-	// ‹æŠÔ[a,b)‚Ì‘˜aBƒm[ƒhk=[l,r)‚É’…–Ú‚µ‚Ä‚¢‚éB
-	ll _query(int a, int b, int k, int l, int r) {
-		if (r <= a || b <= l)return def;  // Œğ·‚µ‚È‚¢
-		if (a <= l && r <= b)return dat[k];   // a,l,r,b‚Ì‡‚ÅŠ®‘S‚ÉŠÜ‚Ü‚ê‚é
-
-		push(k);
-
-		ll c1 = _query(a, b, 2 * k + 1, l, (l + r) / 2);    // ¶‚Ìq
-		ll c2 = _query(a, b, 2 * k + 2, (l + r) / 2, r);    // ‰E‚Ìq
-		return operation(c1, c2);
-	}
-
-	// “à•”ƒNƒGƒŠ_query()‚ğŒÄ‚Ño‚·
-	ll query(int a, int b) {
-		return _query(a, b, 0, 0, n);
-	}
-
-	ll operator[](int i) {
-		//return dat[i + n - 1];
-		return query(i, i + 1);
-	}
-};
-
-struct SumSegTree {
-	int n, height;
-	vector<int> dat;
-
-	// ‰Šú‰»i_n‚ÍÅ‘å—v‘f”j
-	SumSegTree(int _n) {
-		n = 1;
-		height = 1;
-		while (n < _n) {
-			n *= 2;
-			height++;
-		}
-		dat = vector<int>(2 * n - 1);
-	}
-
-	// êŠi(0-indexed)‚Éx‚ğ‘«‚·
-	void add(int i, int x) {
-		i += n - 1;
-		dat[i] += x;
-		while (i > 0) {
-			i = (i - 1) / 2;
-			dat[i] += x;
-		}
-	}
-
-	// ‹æŠÔ[a,b)‚Ì‘˜aBƒm[ƒhk=[l,r)‚É’…–Ú‚µ‚Ä‚¢‚éB
-	int _sum(int a, int b, int k, int l, int r) {
-		if (r <= a || b <= l)return 0;	// Œğ·‚µ‚È‚¢
-		if (a <= l && r <= b)return dat[k];	// a,l,r,b‚Ì‡‚ÅŠ®‘S‚ÉŠÜ‚Ü‚ê‚é
-		else {
-			int s1 = _sum(a, b, 2 * k + 1, l, (l + r) / 2);	// ¶‚Ìq
-			int s2 = _sum(a, b, 2 * k + 2, (l + r) / 2, r);	// ‰E‚Ìq
-			return s1 + s2;
-		}
-	}
-
-	// “à•”ƒNƒGƒŠ_sum()‚ğŒÄ‚Ño‚·
-	int sum(int a, int b) {
-		return _sum(a, b, 0, 0, n);
-	}
-};
-
-struct BIT {
-	int n, height;
-	vector<int> dat;
-
-	BIT(int _n) {
-		n = 1;
-		height = 1;
-		while (n < _n) {
-			n *= 2;
-			height++;
-		}
-		dat = vector<int>(n + 1);
-	}
-
-	// [0,i)‚Ü‚Å‚Ì˜a
-	int sum(int i) {
-		int s = 0;
-		while (i > 0) {
-			s += dat[i];
-			i -= i & -i;	// i & -i ‚Í i ‚ÌÅŒã‚Ì1ƒrƒbƒg
-		}
-		return s;
-	}
-
-	void add(int i, int x) {
-		i++;	// 0-indexed‚É•ÏX
-		while (i <= n) {
-			dat[i] += x;
-			i += i & -i;
-		}
-	}
+    long long calculate(int l, int r) {
+        if (l > r) return 0;
+        l = min<int>(data.size() - 1, max<int>(0, l));
+        r = min<int>(data.size() - 1, max<int>(0, r));
+        return data[r] - data[l];
+    }
 };
 
 void Z_algorithm(string str, vector<int> &Z) {
-	const int L = str.length();
-	for (int i = 1, left = 0, right = 0; i < L; i++) {
-		if (i > right) {
-			left = right = i;
-			for (; right < L && str[right - left] == str[right]; right++);
-			Z[i] = right - left;
-			right--;
-		}
-		else {
-			int k = i - left;
-			if (Z[k] < right - i + 1) {
-				Z[i] = Z[k];
-			}
-			else {
-				left = i;
-				for (; right < L && str[right - left] == str[right]; right++);
-				Z[i] = right - left;
-				right--;
-			}
-		}
-	}
+    const int L = str.length();
+    for (int i = 1, left = 0, right = 0; i < L; i++) {
+        if (i > right) {
+            left = right = i;
+            for (; right < L && str[right - left] == str[right]; right++)
+                ;
+            Z[i] = right - left;
+            right--;
+        } else {
+            int k = i - left;
+            if (Z[k] < right - i + 1) {
+                Z[i] = Z[k];
+            } else {
+                left = i;
+                for (; right < L && str[right - left] == str[right]; right++)
+                    ;
+                Z[i] = right - left;
+                right--;
+            }
+        }
+    }
 }
 
-// “]“|”‚ğ‹‚ß‚é
-ll merge_count(vll &a) {
-	int n = a.size();
-	if (n <= 1)return 0;
-	ll cnt = 0;
-	vll b(a.begin(), a.begin() + n / 2);
-	vll c(a.begin() + n / 2, a.end());
+// è»¢å€’æ•°ã‚’æ±‚ã‚ã‚‹
+long long merge_count(vector<long long> &a) {
+    int n = a.size();
+    if (n <= 1) return 0;
+    long long cnt = 0;
+    vector<long long> b(a.begin(), a.begin() + n / 2);
+    vector<long long> c(a.begin() + n / 2, a.end());
 
-	cnt += merge_count(b);
-	cnt += merge_count(c);
+    cnt += merge_count(b);
+    cnt += merge_count(c);
 
-	int ai = 0, bi = 0, ci = 0;
+    int ai = 0, bi = 0, ci = 0;
 
-	while (ai < n) {
-		if (bi < b.size() && (ci == c.size() || b[bi] < c[ci])) {
-			a[ai] = b[bi];
-			bi++;
-		}
-		else {
-			cnt += n / 2 - bi;
-			a[ai] = c[ci];
-			ci++;
-		}
-		ai++;
-	}
-	return cnt;
+    while (ai < n) {
+        if (bi < b.size() && (ci == c.size() || b[bi] < c[ci])) {
+            a[ai] = b[bi];
+            bi++;
+        } else {
+            cnt += n / 2 - bi;
+            a[ai] = c[ci];
+            ci++;
+        }
+        ai++;
+    }
+    return cnt;
 }
 
 // LIS O(NlogN)
-#define index_of(as, x) \
-  distance(as.begin(), lower_bound(as.begin(), as.end(), x))
+#define index_of(as, x)                                                        \
+    distance(as.begin(), lower_bound(as.begin(), as.end(), x))
 vector<int> lis(const vector<int> &a) {
-	const int n = a.size();
-	vector<int> A(n, INF);
-	vector<int> id(n);
-	for (int i = 0; i < n; ++i) {
-		id[i] = index_of(A, a[i]);
-		A[id[i]] = a[i];
-	}
-	int m = *max_element(id.begin(), id.end());
-	vector<int> b(m + 1);
-	for (int i = n - 1; i >= 0; --i)
-		if (id[i] == m) b[m--] = a[i];
-	return b;
+    const int n = a.size();
+    vector<int> A(n, INF);
+    vector<int> id(n);
+    for (int i = 0; i < n; ++i) {
+        id[i] = index_of(A, a[i]);
+        A[id[i]] = a[i];
+    }
+    int m = *max_element(id.begin(), id.end());
+    vector<int> b(m + 1);
+    for (int i = n - 1; i >= 0; --i)
+        if (id[i] == m) b[m--] = a[i];
+    return b;
 }
 
-// ‘f”ƒe[ƒuƒ‹ O(N log log N)
-void makePrimeTable(vb &prime) {
-	fill(all(prime), true);
-	prime[0] = false;
-	prime[1] = false;
-	rep(i, prime.size()) {
-		if (!prime[i])continue;
-		repr(j, 2, (prime.size() - 1) / i + 1) {
-			prime[i*j] = false;
-		}
-	}
+// ç´ æ•°ãƒ†ãƒ¼ãƒ–ãƒ« O(N log log N)
+void makePrimeTable(vector<bool> &prime) {
+    fill(all(prime), true);
+    prime[0] = false;
+    prime[1] = false;
+    rep(i, prime.size()) {
+        if (!prime[i]) continue;
+        repr(j, 2, (prime.size() - 1) / i + 1) {
+            prime[i * j] = false;
+        }
+    }
 }
-
-*/
