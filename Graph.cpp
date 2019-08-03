@@ -1,6 +1,6 @@
 #include "header.hpp"
 
-void Dijkstra(Graph graph, int start, vll &cost) {
+void Dijkstra(Graph<int> graph, int start, vll &cost) {
     vi prev(graph.size());
     pql<Pll> Q;
 

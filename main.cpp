@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <list>
 #include <map>
 #include <queue>
 #include <random>
@@ -202,21 +203,21 @@ auto make_v(size_t size, Ts... rest) {
 }
 
 template <typename T>
-T max(vector<T> a) {
+T Max(vector<T> a) {
     return *max_element(all(a));
 }
 template <typename T>
-T min(vector<T> a) {
+T Min(vector<T> a) {
     return *min_element(all(a));
 }
 template <typename T>
-T sum(vector<T> a) {
+T Sum(vector<T> a) {
     return accumulate(all(a), (T)0);
 }
 
 // mapでカウントとかする
 template <typename T>
-void add(map<T, int> &m, T item) {
+void Add(map<T, int> &m, T item) {
     if (m.find(item) == m.end()) {
         m[item] = 1;
     } else {
@@ -226,7 +227,7 @@ void add(map<T, int> &m, T item) {
 
 // デフォルト値つきのmapのget
 template <typename T, typename U>
-U get(map<T, U> m, T key, U def) {
+U Get(map<T, U> m, T key, U def) {
     if (m.find(key) == m.end()) {
         return def;
     } else {
@@ -235,12 +236,12 @@ U get(map<T, U> m, T key, U def) {
 }
 
 template <typename T>
-bool contains(set<T> t, const T &key) {
+bool Contains(set<T> t, const T &key) {
     return t.find(key) != t.end();
 }
 
 template <typename T, typename U>
-bool contains(map<T, U> t, const T &key) {
+bool Contains(map<T, U> t, const T &key) {
     return t.find(key) != t.end();
 }
 
@@ -254,17 +255,40 @@ struct Edge {
 };
 
 template <class T>
-using Graph = vec<vec<Edge<T>>>;
-
-template <class T>
 ostream &operator<<(ostream &os, Edge<T> &edge) {
     os << "(" << edge.from << "->" << edge.to << ":" << edge.cost << ")";
     return os;
 }
+template <class T = int>
+class Graph {
+    int n;
+    bool directed;
+    vector<vector<Edge<T>>> edges;
+
+  public:
+    Graph(int n, bool directed = false)
+        : n(n), directed(directed), edges(vector<vector<Edge<T>>>(n)) {}
+
+    void add_edge(int s, int t, T cost) {
+        edges[s].push_back(Edge<T>{s, t, cost});
+        if (!directed) {
+            edges[t].push_back(Edge<T>{t, s, cost});
+        }
+    }
+    Graph() {}
+
+    vector<Edge<T>> operator[](size_t i) const {
+        return edges[i];
+    }
+
+    int size() const {
+        return n;
+    }
+};
 
 //======================================================
 
-signed main(void) {
+int main(void) {
 
     return 0;
 }
