@@ -169,6 +169,7 @@ class LazySegTree {
     }
 };
 
+// Binary Indexed Tree（区間和）
 struct BIT {
     int n, height;
     vector<int> dat;
@@ -194,7 +195,7 @@ struct BIT {
     }
 
     void add(int i, int x) {
-        i++; // 0-indexedに変更
+        i++; // 1-indexedに変更
         while (i <= n) {
             dat[i] += x;
             i += i & -i;

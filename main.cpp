@@ -2,6 +2,7 @@
 #include <bitset>
 #include <cassert>
 #include <chrono>
+#include <cstdint>
 #include <fstream>
 #include <functional>
 #include <iomanip>
@@ -37,8 +38,8 @@ using namespace std;
 #define INFL (long long)(4e18)
 #define INFLR LLONG_MAX
 #define EPS (1e-10)
-#define MOD 1000000007
-// #define MOD 998244353
+//#define MOD 1000000007
+#define MOD 998244353
 #define PI 3.141592653589793238
 #define RMAX 4294967295
 
@@ -288,7 +289,7 @@ class Graph {
 
 //======================================================
 
-int main(void) {
+int main() {
 
     return 0;
 }
