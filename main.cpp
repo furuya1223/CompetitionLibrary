@@ -37,7 +37,7 @@ using namespace std;
 #define INFR INT_MAX
 #define INFL (long long)(4e18)
 #define INFLR LLONG_MAX
-#define EPS (1e-10)
+#define EPS 0.0000000001
 //#define MOD 1000000007
 #define MOD 998244353
 #define PI 3.141592653589793238
@@ -295,6 +295,7 @@ vector<tuple<string, double, double>> parks;
 vector<tuple<string, double, int>> dests;
 vector<vector<double>> dist_car, dist_cart;
 vector<vector<int>> nearest;
+vector<pair<int, int>> sort_dest(lambda);
 
 struct Route {
     vector<int> park_order;
@@ -327,7 +328,7 @@ void output_route(Route route, int finish_i, int finish_j) {
                 cout << endl
                      << get<0>(parks[park]) << " " << get<0>(dests[dest])
                      << " ";
-                count = 0;
+                count = 1;
             } else {
                 cout << get<0>(dests[dest]) << " ";
                 count++;
@@ -378,11 +379,12 @@ tuple<double, int, int> score(Route route) {
             // 滞在時間
             current_time += get<1>(dests[dest - kappa]);
             if (get<2>(dests[dest - kappa]) != 0 &&
-                current_time > get<2>(dests[dest - kappa])) {
+                current_time > get<2>(dests[dest - kappa]) - EPS) {
                 // 時間切れ
                 return mt(-1, -1, -1);
             }
             if (current_time > 240 - EPS) {
+                // 現在の配達先は失敗
                 finish = true;
                 break;
             }
@@ -408,8 +410,7 @@ tuple<double, int, int> score(Route route) {
         prev_park = park;
     }
     // 配達制限チェック
-    repr(i, finish_i + 1, kappa) {
-        int start_j = 0;
+    repr(i, finish_i, kappa) {
         repr(j, (i == finish_i ? finish_j + 1 : 0),
              route.dest_order[route.park_order[i]].size()) {
             if (get<2>(dests[route.dest_order[route.park_order[i]][j]]) != 0) {
@@ -469,12 +470,73 @@ Route random_change(Route route) {
             swap(route.dest_order[p1][i], route.dest_order[p1].back());
         }
         route.dest_order[p2].push_back(route.dest_order[p1].back());
-        route.dest_order[p1].resize(route.dest_order[p1].size() - 1);
+        route.dest_order[p1].pop_back();
     }
     return route;
 }
 
-Route search(Route current_route, double second) {
+// 初期ルート作成（ランダム要素あり）
+Route generate_first_route() {
+    Route route;
+    rep(i, kappa) {
+        route.park_order[i] = i;
+    }
+    random_device seed_gen;
+    mt19937 engine(seed_gen());
+    shuffle(all(route.park_order), engine);
+
+    sort(all(sort_dest));
+    rep(i, lambda) {
+        int dest = get<1>(sort_dest[i]);
+        int priority = get<0>(sort_dest[i]);
+        if (priority < 2) {
+            double min_dist = INF;
+            int nearest_park = 0;
+            rep(j, 5) {
+                int park = route.park_order[j];
+                // dump(dist_cart[i][j], min_dist);
+                if (dist_cart[dest][park] < min_dist) {
+                    min_dist = dist_cart[dest][park];
+                    nearest_park = park;
+                    // dump(i, park, nearest_park);
+                }
+            }
+            route.dest_order[nearest_park].push_back(dest);
+        } else {
+            double min_dist = INF;
+            int nearest_park = 0;
+            rep(j, kappa) {
+                int park = route.park_order[j];
+                // dump(dist_cart[i][park], min_dist);
+                if (dist_cart[dest][park] < min_dist) {
+                    min_dist = dist_cart[dest][park];
+                    nearest_park = park;
+                    // dump(i, park, nearest_park);
+                }
+            }
+            route.dest_order[nearest_park].push_back(dest);
+        }
+    }
+    return route;
+}
+
+// 初期ルートを n 個生成して最も良いものを選ぶ
+Route select_first_route(int n) {
+    Route selected;
+    double best_score;
+    rep(i, n) {
+        Route route = generate_first_route();
+        double s = get<0>(score(route));
+        if (s > best_score) {
+            selected = route;
+            best_score = s;
+        }
+    }
+    return selected;
+}
+
+// 山登り法
+Route greedy_search(Route current_route, double second) {
     double current_score = get<0>(score(current_route));
     while (get_elapsed_sec() < second) {
         Route next_route = random_change(current_route);
@@ -489,12 +551,46 @@ Route search(Route current_route, double second) {
     return current_route;
 }
 
+Route search(Route current_route, double second) {
+    double start_temp = 100;
+    double end_temp = 10;
+    Route best_route;
+    double best_score;
+    double current_score = get<0>(score(current_route));
+    double elapsed_time = get_elapsed_sec();
+    while ((elapsed_time = get_elapsed_sec()) < second) {
+        double temp =
+            start_temp + (end_temp - start_temp) * elapsed_time / second;
+
+        Route next_route = random_change(current_route);
+        // rep(i, (int)((second - elapsed_time) / second * 5) + 1) {
+        //     next_route = random_change(current_route);
+        // }
+        double next_score = get<0>(score(next_route));
+
+        double probability = exp((next_score - current_score) / temp);
+        bool force_next = probability > drand(0, 1);
+
+        if (current_score < 0 || next_score > current_score ||
+            (force_next && next_score > 0)) {
+            current_route = next_route;
+            current_score = next_score;
+            if (next_score > best_score) {
+                dump(next_score, elapsed_time);
+                best_score = next_score;
+                best_route = next_route;
+            }
+        }
+    }
+    return best_route;
+}
+
 int main() {
     start = std::chrono::system_clock::now();
     cin >> kappa >> lambda;
     parks = vector<tuple<string, double, double>>(kappa);
     dests = vector<tuple<string, double, int>>(lambda);
-    vector<pair<int, int>> sort_dest(lambda);
+    sort_dest = vector<pair<int, int>>(lambda);
 
     rep(i, kappa) {
         string p;
@@ -508,7 +604,7 @@ int main() {
         int r;
         cin >> d >> t >> r;
         dests[i] = mt(d, t, r);
-        sort_dest[i] = mp((r == 120 ? 0 : r == 240 ? 1 : 2), i);
+        sort_dest[i] = mp((r == 120 ? 0 : (r == 240 ? 1 : 2)), i);
     }
     dist_car = make_v(kappa, kappa, 0.0);
     dist_cart = make_v(lambda, kappa + lambda, 0.0);
@@ -528,47 +624,27 @@ int main() {
         }
     }
 
-    // 実行可能経路を作りたい
-    Route route;
-    rep(i, kappa) {
-        route.park_order[i] = i;
-    }
-    sort(all(sort_dest));
-    rep(i, lambda) {
-        double min_dist = INF;
-        int nearest_park = 0;
-        int dest = get<1>(sort_dest[i]);
-        int priority = get<0>(sort_dest[i]);
-        if (priority < 2) {
-            route.dest_order[0].push_back(dest);
-        } else {
-            rep(j, kappa) {
-                // dump(dist_cart[i][j], min_dist);
-                if (dist_cart[dest][j] < min_dist) {
-                    min_dist = dist_cart[dest][j];
-                    nearest_park = j;
-                    // dump(i, j, nearest_park);
-                }
-            }
-            route.dest_order[nearest_park].push_back(dest);
-        }
-    }
+    // 初期ルート作成
+    Route route = select_first_route(100);
+    // Route route = generate_first_route();
 
-    DEB {
-        auto result = score(route);
-        double score = get<0>(result);
-        int finish_i = get<1>(result);
-        int finish_j = get<2>(result);
-        dump(score, finish_i, finish_j);
-        dump(route.park_order);
-        dump(route.dest_order);
-    }
+    // DEB {
+    //     auto result = score(route);
+    //     double score = get<0>(result);
+    //     int finish_i = get<1>(result);
+    //     int finish_j = get<2>(result);
+    //     dump(score, finish_i, finish_j);
+    //     dump(route.park_order);
+    //     dump(route.dest_order);
+    //     output_route(route, kappa, 0);
+    // }
 
-    Route best_route = search(route, 9.9);
+    Route best_route = search(route, 59.99);
     auto result = score(best_route);
     double score = get<0>(result);
     int finish_i = get<1>(result);
     int finish_j = get<2>(result);
+    assert(score > -EPS);
     dump(score, finish_i, finish_j);
     dump(get_elapsed_sec());
     output_route(best_route, finish_i, finish_j);
