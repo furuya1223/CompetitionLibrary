@@ -291,7 +291,7 @@ class Graph {
 template <class T>
 struct augEdge {
     T from, to;
-    int cost;
+    ll cost;
     bool operator<(augEdge<T> e) {
         return cost < e.cost;
     }
@@ -301,8 +301,8 @@ struct augEdge {
 };
 
 template <class T>
-void augDijkstra(map<T, vector<augEdge<T>>> graph, T start, map<T, int> &cost) {
-    pql<pair<int, T>> Q;
+void augDijkstra(map<T, vector<augEdge<T>>> graph, T start, map<T, ll> &cost) {
+    pql<pair<ll, T>> Q;
 
     cost[start] = 0;
 
@@ -310,11 +310,12 @@ void augDijkstra(map<T, vector<augEdge<T>>> graph, T start, map<T, int> &cost) {
 
     while (!Q.empty()) {
         T pos = Q.top().second;
-        int d = Q.top().first;
+        ll d = Q.top().first;
         Q.pop();
+        if (d > cost[pos]) continue;
         rep(i, graph[pos].size()) {
             T to = graph[pos][i].to;
-            int c = graph[pos][i].cost;
+            ll c = graph[pos][i].cost;
             if (cost.find(to) == cost.end() || cost[to] > cost[pos] + c) {
                 cost[to] = cost[pos] + c;
                 Q.push(mp(cost[to], to));
@@ -324,27 +325,30 @@ void augDijkstra(map<T, vector<augEdge<T>>> graph, T start, map<T, int> &cost) {
 }
 
 map<string, vector<augEdge<string>>> G_car, G_cart;
-map<string, pair<int, bool>> roads;
+map<string, pair<ll, bool>> roads;
 map<string, vector<pair<string, string>>> crosses;
-map<string, pair<string, int>> parks;
-map<string, pair<string, int>> dests;
+map<string, pair<string, ll>> parks;
+map<string, pair<string, ll>> dests;
 vector<string> nodes;
 
 // 道路情報
 // 道路ID→始点交差点、終点交差点、駐車可能箇所リスト、配達先リスト
 struct RoadInfo {
     string start_cross, end_cross;
-    vector<pair<int, string>> park_dest; // (Sからの距離, ID)
+    vector<pair<ll, string>> park_dest; // (Sからの距離, ID)
 };
 map<string, RoadInfo> road_info_se, road_info_es, road_info_cart;
 
 int main() {
+    // std::random_device seed_gen;
+    // std::mt19937 engine(seed_gen());
     int N_road, N_cross, N_park, N_dest, N_query;
     cin >> N_road >> N_cross >> N_park >> N_dest >> N_query;
 
+    // 道路
     rep(i, N_road) {
         string r;
-        int l, f;
+        ll l, f;
         cin >> r >> l >> f;
         roads[r] = mp(l, f == 1);
         road_info_se[r] = RoadInfo();
@@ -354,6 +358,7 @@ int main() {
         }
     }
 
+    // 交差点
     rep(i, N_cross) {
         string c, r_in, r_out;
         cin >> c >> r_in >> r_out;
@@ -361,26 +366,22 @@ int main() {
             crosses[c] = vector<pair<string, string>>();
         }
         crosses[c].push_back(mp(r_in, r_out));
-
         if (r_in.substr(4, 2) == "SE") {
-            road_info_se[r_in.substr(0, 4)].end_cross = c;
             road_info_cart[r_in.substr(0, 4)].end_cross = c;
         } else {
-            road_info_es[r_in.substr(0, 4)].start_cross = c;
             road_info_cart[r_in.substr(0, 4)].start_cross = c;
         }
         if (r_out.substr(4, 2) == "SE") {
-            road_info_se[r_out.substr(0, 4)].start_cross = c;
             road_info_cart[r_out.substr(0, 4)].start_cross = c;
         } else {
-            road_info_es[r_out.substr(0, 4)].end_cross = c;
             road_info_cart[r_out.substr(0, 4)].end_cross = c;
         }
     }
 
+    // 駐車可能箇所
     rep(i, N_park) {
         string p, r;
-        int s;
+        ll s;
         cin >> p >> r >> s;
         parks[p] = mp(r, s);
         if (p.substr(4, 2) == "SE") {
@@ -392,44 +393,44 @@ int main() {
         nodes.push_back(p);
     }
 
+    // 配達先
     rep(i, N_dest) {
         string d, r;
-        int s;
+        ll s;
         cin >> d >> r >> s;
-        parks[d] = mp(r, s);
+        dests[d] = mp(r, s);
         road_info_cart[r].park_dest.push_back(mp(s, d));
-        // road_info_se[r].park_dest.push_back(mp(s, d));
-        // if (!get<1>(roads[r])) {
-        //     // 一方通行でなければ反対向きの道路にも追加
-        //     road_info_es[r].park_dest.push_back(mp(s, d));
-        // }
         nodes.push_back(d);
     }
 
     // グラフ構築
-    // 頂点は交差点・駐車可能箇所・配達先
 
+    // 車両用グラフ（駐車可能箇所、道路の端点がノード）
     // 順方向
     for (auto road_info_pair : road_info_se) {
         string road = road_info_pair.first;
         RoadInfo road_info = road_info_pair.second;
-        // 始点・終点を追加
-        road_info.park_dest.push_back(mp(0, road + "SES"));
-        road_info.park_dest.push_back(mp(get<0>(roads[road]), road + "SEE"));
 
+        // 始点・終点を追加
+        road_info.park_dest.push_back(mp(-1, road + "SES"));
+        road_info.park_dest.push_back(mp(roads[road].first + 1, road + "SEE"));
+
+        // S からの距離でソート
         sort(all(road_info.park_dest));
+        road_info.park_dest[0] = mp(0, road + "SES");
+        road_info.park_dest.back() = mp(roads[road].first, road + "SEE");
 
         // グラフに辺を追加
         rep(i, road_info.park_dest.size() - 1) {
             auto from_dist_pos = road_info.park_dest[i];
-            int from_dist = from_dist_pos.first;
+            ll from_dist = from_dist_pos.first;
             string from_pos = from_dist_pos.second;
             auto to_dist_pos = road_info.park_dest[i + 1];
-            int to_dist = to_dist_pos.first;
+            ll to_dist = to_dist_pos.first;
             string to_pos = to_dist_pos.second;
-            int dist = to_dist - from_dist;
+            ll dist = to_dist - from_dist;
+            assert(dist >= 0);
 
-            // 車両用グラフ
             if (!Contains(G_car, from_pos)) {
                 G_car[from_pos] = vector<augEdge<string>>();
             }
@@ -443,20 +444,24 @@ int main() {
         RoadInfo road_info = road_info_pair.second;
 
         // 始点・終点を追加
-        road_info.park_dest.push_back(mp(0, road + "ESS"));
-        road_info.park_dest.push_back(mp(get<0>(roads[road]), road + "ESE"));
+        road_info.park_dest.push_back(mp(-1, road + "ESS"));
+        road_info.park_dest.push_back(mp(roads[road].first + 1, road + "ESE"));
 
+        // S からの距離でソート
         sort(all(road_info.park_dest));
+        road_info.park_dest[0] = mp(0, road + "ESS");
+        road_info.park_dest.back() = mp(roads[road].first, road + "ESE");
 
         // グラフに辺を追加
         rep(i, road_info.park_dest.size() - 1) {
             auto from_dist_pos = road_info.park_dest[i + 1];
-            int from_dist = from_dist_pos.first;
+            ll from_dist = from_dist_pos.first;
             string from_pos = from_dist_pos.second;
             auto to_dist_pos = road_info.park_dest[i];
-            int to_dist = to_dist_pos.first;
+            ll to_dist = to_dist_pos.first;
             string to_pos = to_dist_pos.second;
-            int dist = from_dist - to_dist;
+            ll dist = from_dist - to_dist;
+            assert(dist >= 0);
 
             // 車両用グラフ
             if (!Contains(G_car, from_pos)) {
@@ -469,8 +474,12 @@ int main() {
     // 交差点の接続情報
     for (auto cross_info : crosses) {
         for (auto info : cross_info.second) {
+            // R003SE R004SE なら、R003SEE->R004SES となる
             string from = info.first + info.first[5];
             string to = info.second + info.second[4];
+            if (!Contains(G_car, from)) {
+                G_car[from] = vector<augEdge<string>>();
+            }
             G_car[from].push_back(augEdge<string>{from, to, 0});
         }
     }
@@ -483,21 +492,21 @@ int main() {
         // 始点・終点を追加
         road_info.park_dest.push_back(mp(0, road_info.start_cross));
         road_info.park_dest.push_back(
-            mp(get<0>(roads[road]), road_info.end_cross));
+            mp(roads[road].first, road_info.end_cross));
 
         sort(all(road_info.park_dest));
 
         // グラフに辺を追加
         rep(i, road_info.park_dest.size() - 1) {
-            auto from_dist_pos = road_info.park_dest[i + 1];
-            int from_dist = from_dist_pos.first;
+            auto from_dist_pos = road_info.park_dest[i];
+            ll from_dist = from_dist_pos.first;
             string from_pos = from_dist_pos.second;
-            auto to_dist_pos = road_info.park_dest[i];
-            int to_dist = to_dist_pos.first;
+            auto to_dist_pos = road_info.park_dest[i + 1];
+            ll to_dist = to_dist_pos.first;
             string to_pos = to_dist_pos.second;
-            int dist = from_dist - to_dist;
+            ll dist = to_dist - from_dist;
+            assert(dist >= 0);
 
-            dump(from_pos, to_pos, dist);
             if (!Contains(G_cart, from_pos)) {
                 G_cart[from_pos] = vector<augEdge<string>>();
             }
@@ -517,27 +526,32 @@ int main() {
         //         cout << pos << " " << edge.to << " " << edge.cost << endl;
         //     }
         // }
-        for (auto pos_edge : G_cart) {
-            string pos = pos_edge.first;
-            for (auto edge : G_cart[pos]) {
-                cout << pos << " " << edge.to << " " << edge.cost << endl;
-            }
-        }
+        // for (auto pos_edge : G_cart) {
+        //     string pos = pos_edge.first;
+        //     for (auto edge : G_cart[pos]) {
+        //         cout << pos << " " << edge.to << " " << edge.cost << endl;
+        //     }
+        // }
     }
 
-    map<pair<string, string>, int> dist_car, dist_cart;
+    // park, dest 間の最短距離を事前に計算
+    map<pair<string, string>, ll> dist_car, dist_cart;
     for (auto from : nodes) {
-        map<string, int> cost_car;
+        if (from.size() == 4) continue;
+        map<string, ll> cost_car;
         augDijkstra(G_car, from, cost_car);
         for (auto to : nodes) {
+            if (to.size() == 4) continue;
             if (Contains(cost_car, to)) {
                 dist_car[mp(from, to)] = cost_car[to];
             } else {
                 dist_car[mp(from, to)] = -1;
             }
         }
+    }
 
-        map<string, int> cost_cart;
+    for (auto from : nodes) {
+        map<string, ll> cost_cart;
         augDijkstra(G_cart, from, cost_cart);
         for (auto to : nodes) {
             if (Contains(cost_cart, to)) {
@@ -547,6 +561,18 @@ int main() {
             }
         }
     }
+
+    // DEB {
+    //     for (auto pair_dist : dist_car) {
+    //         cout << pair_dist.first.first << " " << pair_dist.first.second
+    //              << " " << pair_dist.second << endl;
+    //     }
+    //     cout << endl;
+    //     for (auto pair_dist : dist_cart) {
+    //         cout << pair_dist.first.first << " " << pair_dist.first.second
+    //              << " " << pair_dist.second << endl;
+    //     }
+    // }
 
     // クエリ
     rep(i, N_query) {
