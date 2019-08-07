@@ -465,14 +465,109 @@ Route random_change(Route route) {
         do {
             p2 = irand(0, kappa);
         } while (p1 == p2);
+        // p1 の要素を選択
         int i = irand(0, route.dest_order[p1].size());
+        // 選択要素を p1 の末尾へ移動
         if (i != route.dest_order[p1].size() - 1) {
             swap(route.dest_order[p1][i], route.dest_order[p1].back());
         }
+        // 選択要素を p2 に追加
         route.dest_order[p2].push_back(route.dest_order[p1].back());
+        // 選択要素を p1 から削除
         route.dest_order[p1].pop_back();
+        // 選択要素を p2 末尾からランダムな位置に変える
+        int j = irand(0, route.dest_order[p2].size());
+        if (j != route.dest_order[p2].size() - 1) {
+            swap(route.dest_order[p2][j], route.dest_order[p2].back());
+        }
     }
     return route;
+}
+
+vector<int> inplace_change(Route &route) {
+    int mode = irand(0, 3);
+    if (mode == 0) {
+        // park を swap
+        int i = irand(0, kappa);
+        int j;
+        do {
+            j = irand(0, kappa);
+        } while (i == j);
+        swap(route.park_order[i], route.park_order[j]);
+        return {0, i, j};
+    } else if (mode == 1) {
+        // park 内で dest を swap
+        int p;
+        rep(_, 100) {
+            p = irand(0, kappa);
+            if (route.dest_order[p].size() >= 2) break;
+        }
+        if (route.dest_order[p].size() < 2) return {-1};
+        int i = irand(0, route.dest_order[p].size());
+        int j;
+        do {
+            j = irand(0, route.dest_order[p].size());
+        } while (i == j);
+        swap(route.dest_order[p][i], route.dest_order[p][j]);
+        return {1, p, i, j};
+    } else {
+        // p1 の dest を p2 に入れる
+        int p1;
+        do {
+            p1 = irand(0, kappa);
+        } while (route.dest_order[p1].size() == 0);
+        int p2;
+        do {
+            p2 = irand(0, kappa);
+        } while (p1 == p2);
+        // p1 の要素を選択
+        int i = irand(0, route.dest_order[p1].size());
+        // 選択要素を p1 の末尾へ移動
+        if (i != route.dest_order[p1].size() - 1) {
+            swap(route.dest_order[p1][i], route.dest_order[p1].back());
+        }
+        // 選択要素を p2 に追加
+        route.dest_order[p2].push_back(route.dest_order[p1].back());
+        // 選択要素を p1 から削除
+        route.dest_order[p1].pop_back();
+        // 選択要素を p2 末尾からランダムな位置に変える
+        int j = irand(0, route.dest_order[p2].size());
+        if (j != route.dest_order[p2].size() - 1) {
+            swap(route.dest_order[p2][j], route.dest_order[p2].back());
+        }
+        return {2, p1, p2, i, j};
+    }
+}
+
+void undo(Route &route, const vector<int> &param) {
+    if (param[0] == -1)
+        return;
+    else if (param[0] == 0) {
+        // i, j を swap
+        swap(route.park_order[param[1]], route.park_order[param[2]]);
+    } else if (param[0] == 1) {
+        // p 内で i, j を swap
+        swap(route.dest_order[param[1]][param[2]],
+             route.dest_order[param[1]][param[3]]);
+    } else {
+        // p2 の j 要素を末尾に移動し、p1 の末尾に追加し、i 番目に移動する
+        int p1 = param[1];
+        int p2 = param[2];
+        int i = param[3];
+        int j = param[4];
+        // 選択要素を p2 の末尾へ移動
+        if (j != route.dest_order[p2].size() - 1) {
+            swap(route.dest_order[p2][j], route.dest_order[p2].back());
+        }
+        // 選択要素を p1 に追加
+        route.dest_order[p1].push_back(route.dest_order[p2].back());
+        // 選択要素を p2 から削除
+        route.dest_order[p2].pop_back();
+        // 選択要素を p1 の i 番目へ移動
+        if (i != route.dest_order[p1].size() - 1) {
+            swap(route.dest_order[p1][i], route.dest_order[p1].back());
+        }
+    }
 }
 
 // 初期ルート作成（ランダム要素あり）
@@ -552,8 +647,8 @@ Route greedy_search(Route current_route, double second) {
 }
 
 Route search(Route current_route, double second) {
-    double start_temp = 100;
-    double end_temp = 10;
+    double start_temp = 1000;
+    double end_temp = 100;
     Route best_route;
     double best_score;
     double current_score = get<0>(score(current_route));
@@ -562,24 +657,27 @@ Route search(Route current_route, double second) {
         double temp =
             start_temp + (end_temp - start_temp) * elapsed_time / second;
 
-        Route next_route = random_change(current_route);
+        auto param = inplace_change(current_route);
         // rep(i, (int)((second - elapsed_time) / second * 5) + 1) {
         //     next_route = random_change(current_route);
         // }
-        double next_score = get<0>(score(next_route));
+        double next_score = get<0>(score(current_route));
 
         double probability = exp((next_score - current_score) / temp);
+        // dump(next_score - current_score);
+        // double probability = (second - elapsed_time) / second;
         bool force_next = probability > drand(0, 1);
 
         if (current_score < 0 || next_score > current_score ||
             (force_next && next_score > 0)) {
-            current_route = next_route;
             current_score = next_score;
             if (next_score > best_score) {
                 dump(next_score, elapsed_time);
                 best_score = next_score;
-                best_route = next_route;
+                best_route = current_route;
             }
+        } else {
+            undo(current_route, param);
         }
     }
     return best_route;
@@ -625,7 +723,7 @@ int main() {
     }
 
     // 初期ルート作成
-    Route route = select_first_route(100);
+    Route route = select_first_route(500);
     // Route route = generate_first_route();
 
     // DEB {
@@ -644,7 +742,6 @@ int main() {
     double score = get<0>(result);
     int finish_i = get<1>(result);
     int finish_j = get<2>(result);
-    assert(score > -EPS);
     dump(score, finish_i, finish_j);
     dump(get_elapsed_sec());
     output_route(best_route, finish_i, finish_j);
