@@ -647,15 +647,16 @@ Route greedy_search(Route current_route, double second) {
 }
 
 Route search(Route current_route, double second) {
-    double start_temp = 1000;
-    double end_temp = 100;
+    double start_temp = 1500;
+    double end_temp = 15;
     Route best_route;
     double best_score;
     double current_score = get<0>(score(current_route));
     double elapsed_time = get_elapsed_sec();
     while ((elapsed_time = get_elapsed_sec()) < second) {
-        double temp =
-            start_temp + (end_temp - start_temp) * elapsed_time / second;
+        double temp = start_temp + (end_temp - start_temp) *
+                                       (elapsed_time / second) *
+                                       (elapsed_time / second);
 
         auto param = inplace_change(current_route);
         // rep(i, (int)((second - elapsed_time) / second * 5) + 1) {
@@ -666,6 +667,8 @@ Route search(Route current_route, double second) {
         double probability = exp((next_score - current_score) / temp);
         // dump(next_score - current_score);
         // double probability = (second - elapsed_time) / second;
+        // if (probability < 1 - EPS)
+        //     dump(probability, next_score - current_score);
         bool force_next = probability > drand(0, 1);
 
         if (current_score < 0 || next_score > current_score ||
