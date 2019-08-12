@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <cassert>
 #include <chrono>
 #include <functional>
 #include <iomanip>
@@ -11,12 +10,19 @@
 
 using namespace std;
 
-constexpr int TRIAL = 2;        // 試行回数
+constexpr int TRIAL = 1;        // 試行回数
 constexpr bool PARK3ALL = true; // 最初の 3 park を全探索するか乱択か
+constexpr int FIRST_ROUTE_SEARCH = 10000; // PARK3ALL が false なら有効
+int unrestricted_park_num;
+constexpr int UNRESTRICTED_PARK_NUM_1 = 10; // 無制限配達先の対象 park 数
+constexpr int UNRESTRICTED_PARK_NUM_2 = 10; // 無制限配達先の対象 park 数
 constexpr bool USE_MODIFIED_SCORE = false; // 修正スコアを使用するか
-constexpr double START_TEMP = 1500;        // 初期温度
-constexpr double END_TEMP = 6;             // 最終温度
-constexpr double TIME_LIMIT = 59.9;        // 探索を打ち止める時間
+constexpr int MAX_CHANGE_STEP = 1;
+
+constexpr double START_TEMP_1 = 1000;
+constexpr double START_TEMP_2 = 1000;
+constexpr double END_TEMP = 5;
+constexpr double TIME_LIMIT = 59.9;
 
 #define repr(i, a, b) for (int i = (int)(a); i < (int)(b); i++)
 #define rep(i, n) repr(i, 0, n)
@@ -75,19 +81,8 @@ void dump_func(Head &&head, Tail &&... tail) {
 
 // ^^^^^^^^^^^^^^^^^^^^^^^ debug output ^^^^^^^^^^^^^^^^^^^^^^^
 
-// [a,b)
-int irand(int a, int b) {
-    static mt19937 Rand(static_cast<unsigned int>(std::time(nullptr)));
-    uniform_int_distribution<int> dist(a, b - 1);
-    return dist(Rand);
-}
-
-// [a,b)
-double drand(int a, int b) {
-    static mt19937 Rand(static_cast<unsigned int>(std::time(nullptr)));
-    uniform_real_distribution<double> dist(a, b);
-    return dist(Rand);
-}
+random_device seed_gen;
+mt19937 engine(seed_gen());
 
 // 多次元vector生成
 template <class T>
@@ -121,11 +116,12 @@ struct Route {
     }
 };
 
+double nano_unit = 1.0 / 1000000000;
 inline double get_elapsed_sec() {
     return static_cast<double>(chrono::duration_cast<chrono::nanoseconds>(
                                    std::chrono::system_clock::now() - start)
-                                   .count()) /
-           1000000000;
+                                   .count()) *
+           nano_unit;
 }
 
 void output_route(Route route, int finish_i, int finish_j) {
@@ -153,8 +149,8 @@ void output_route(Route route, int finish_i, int finish_j) {
 tuple<double, int, int> score(const Route route) {
     double current_time = 0;
     int prev_park = -1;
-    int finish_i = kappa - 1;
-    int finish_j = route.dest_order[route.park_order.back()].size() - 1;
+    int finish_i = 0;
+    int finish_j = -1;
     int complete = 0;
     bool finish = false;
 
@@ -191,11 +187,11 @@ tuple<double, int, int> score(const Route route) {
             // 滞在時間
             current_time += get<1>(dests[dest - kappa]);
             if (get<2>(dests[dest - kappa]) != 0 &&
-                current_time > get<2>(dests[dest - kappa]) - EPS) {
+                current_time > get<2>(dests[dest - kappa]) + EPS) {
                 // 時間切れ
                 return mt(-1, -1, -1);
             }
-            if (current_time > 240 - EPS) {
+            if (current_time > 240 + EPS) {
                 // 現在の配達先は失敗
                 finish = true;
                 break;
@@ -240,12 +236,13 @@ tuple<double, int, int> score(const Route route) {
 pair<double, double> score_modified(Route route) {
     double current_time = 0;
     int prev_park = -1;
-    int finish_i = kappa - 1;
-    int finish_j = route.dest_order[route.park_order.back()].size() - 1;
+    int finish_i = 0;
+    int finish_j = -1;
     int complete = 0;
     double complete_time;
     bool finish = false;
     double reward = 0;
+    double penalty = 0;
     double true_score = -1;
 
     // 配達
@@ -284,18 +281,18 @@ pair<double, double> score_modified(Route route) {
             // 滞在時間
             current_time += get<1>(dests[dest - kappa]);
             if (get<2>(dests[dest - kappa]) != 0 &&
-                current_time > get<2>(dests[dest - kappa]) - EPS) {
+                current_time > get<2>(dests[dest - kappa]) + EPS) {
                 // 時間切れ
                 return mp(-1, -1);
             }
-            if (current_time > 240 - EPS) {
-                if (current_time > 3600) {
+            if (current_time > 240 + EPS) {
+                if (current_time > 360) {
                     finish = true;
                     break;
                 }
                 // 現在の配達先は失敗
                 // reward += 10000 * exp(-(current_time - 240) * 0.14);
-                reward += 5000 * 1 / ((current_time - 240) / 100 + 1);
+                reward += 5000 * (1 - (current_time - 240) / 120);
 
                 // 真のスコアを記録
                 if (true_score < 0) {
@@ -307,6 +304,7 @@ pair<double, double> score_modified(Route route) {
             // 配達完了
             count++;
             finish_i = i, finish_j = j;
+            penalty += current_time;
             if (complete == lambda) {
                 // すべて配達
                 finish = true;
@@ -333,7 +331,7 @@ pair<double, double> score_modified(Route route) {
             }
         }
     }
-    return mp(true_score + reward, true_score);
+    return mp(true_score + reward - penalty, true_score);
 }
 
 Route sample_route() {
@@ -345,41 +343,50 @@ Route sample_route() {
 }
 
 Route random_change(Route route) {
-    int mode = irand(0, 4);
+    // int mode = irand(0, 4);
+    int mode = engine() % 4;
     if (mode == 0) {
         // park を swap
-        int i = irand(0, kappa);
+        // int i = irand(0, kappa);
+        int i = engine() % kappa;
         int j;
         do {
-            j = irand(0, kappa);
+            // j = irand(0, kappa);
+            j = engine() % kappa;
         } while (i == j);
         std::swap(route.park_order[i], route.park_order[j]);
     } else if (mode == 1) {
         // park 内で dest を swap
         int p;
         rep(_, 100) {
-            p = irand(0, kappa);
+            // p = irand(0, kappa);
+            p = engine() % kappa;
             if (route.dest_order[p].size() >= 2) break;
         }
         if (route.dest_order[p].size() < 2) return route;
-        int i = irand(0, route.dest_order[p].size());
+        // int i = irand(0, route.dest_order[p].size());
+        int i = engine() % route.dest_order[p].size();
         int j;
         do {
-            j = irand(0, route.dest_order[p].size());
+            // j = irand(0, route.dest_order[p].size());
+            j = engine() % route.dest_order[p].size();
         } while (i == j);
         std::swap(route.dest_order[p][i], route.dest_order[p][j]);
     } else if (mode == 3) {
         // p1 の dest を p2 に入れる
         int p1;
         do {
-            p1 = irand(0, kappa);
+            // p1 = irand(0, kappa);
+            p1 = engine() % kappa;
         } while (route.dest_order[p1].size() == 0);
         int p2;
         do {
-            p2 = irand(0, kappa);
+            // p2 = irand(0, kappa);
+            p2 = engine() % kappa;
         } while (p1 == p2);
         // p1 の要素を選択
-        int i = irand(0, route.dest_order[p1].size());
+        // int i = irand(0, route.dest_order[p1].size());
+        int i = engine() % route.dest_order[p1].size();
         // 選択要素を p1 の末尾へ移動
         if (i != route.dest_order[p1].size() - 1) {
             std::swap(route.dest_order[p1][i], route.dest_order[p1].back());
@@ -389,15 +396,18 @@ Route random_change(Route route) {
         // 選択要素を p1 から削除
         route.dest_order[p1].pop_back();
         // 選択要素を p2 末尾からランダムな位置に変える
-        int j = irand(0, route.dest_order[p2].size());
+        // int j = irand(0, route.dest_order[p2].size());
+        int j = engine() % route.dest_order[p2].size();
         if (j != route.dest_order[p2].size() - 1) {
             std::swap(route.dest_order[p2][j], route.dest_order[p2].back());
         }
     } else {
-        int p1 = irand(0, kappa);
+        // int p1 = irand(0, kappa);
+        int p1 = engine() % kappa;
         int p2;
         do {
-            p2 = irand(0, kappa);
+            // p2 = irand(0, kappa);
+            p2 = engine() % kappa;
         } while (p1 == p2);
         std::swap(route.dest_order[p1], route.dest_order[p2]);
     }
@@ -405,13 +415,16 @@ Route random_change(Route route) {
 }
 
 vector<int> inplace_change(Route &route) {
-    int mode = irand(0, 4);
+    // int mode = irand(0, 4);
+    int mode = engine() % 4;
     if (mode == 0) {
         // park を swap
-        int i = irand(0, kappa);
+        // int i = irand(0, kappa);
+        int i = engine() % kappa;
         int j;
         do {
-            j = irand(0, kappa);
+            // j = irand(0, kappa);
+            j = engine() % kappa;
         } while (i == j);
         std::swap(route.park_order[i], route.park_order[j]);
         return {0, i, j};
@@ -419,14 +432,17 @@ vector<int> inplace_change(Route &route) {
         // park 内で dest を swap
         int p;
         rep(_, 100) {
-            p = irand(0, kappa);
+            // p = irand(0, kappa);
+            p = engine() % kappa;
             if (route.dest_order[p].size() >= 2) break;
         }
         if (route.dest_order[p].size() < 2) return {-1};
-        int i = irand(0, route.dest_order[p].size());
+        // int i = irand(0, route.dest_order[p].size());
+        int i = engine() % route.dest_order[p].size();
         int j;
         do {
-            j = irand(0, route.dest_order[p].size());
+            // j = irand(0, route.dest_order[p].size());
+            j = engine() % route.dest_order[p].size();
         } while (i == j);
         std::swap(route.dest_order[p][i], route.dest_order[p][j]);
         return {1, p, i, j};
@@ -434,14 +450,17 @@ vector<int> inplace_change(Route &route) {
         // p1 の dest を p2 に入れる
         int p1;
         do {
-            p1 = irand(0, kappa);
+            // p1 = irand(0, kappa);
+            p1 = engine() % kappa;
         } while (route.dest_order[p1].size() == 0);
         int p2;
         do {
-            p2 = irand(0, kappa);
+            // p2 = irand(0, kappa);
+            p2 = engine() % kappa;
         } while (p1 == p2);
         // p1 の要素を選択
-        int i = irand(0, route.dest_order[p1].size());
+        // int i = irand(0, route.dest_order[p1].size());
+        int i = engine() % route.dest_order[p1].size();
         // 選択要素を p1 の末尾へ移動
         if (i != route.dest_order[p1].size() - 1) {
             std::swap(route.dest_order[p1][i], route.dest_order[p1].back());
@@ -451,16 +470,19 @@ vector<int> inplace_change(Route &route) {
         // 選択要素を p1 から削除
         route.dest_order[p1].pop_back();
         // 選択要素を p2 末尾からランダムな位置に変える
-        int j = irand(0, route.dest_order[p2].size());
+        // int j = irand(0, route.dest_order[p2].size());
+        int j = engine() % route.dest_order[p2].size();
         if (j != route.dest_order[p2].size() - 1) {
             std::swap(route.dest_order[p2][j], route.dest_order[p2].back());
         }
         return {2, p1, p2, i, j};
     } else {
-        int p1 = irand(0, kappa);
+        // int p1 = irand(0, kappa);
+        int p1 = engine() % kappa;
         int p2;
         do {
-            p2 = irand(0, kappa);
+            // p2 = irand(0, kappa);
+            p2 = engine() % kappa;
         } while (p1 == p2);
         std::swap(route.dest_order[p1], route.dest_order[p2]);
         return {3, p1, p2};
@@ -506,8 +528,6 @@ Route generate_first_route() {
     rep(i, kappa) {
         route.park_order[i] = i;
     }
-    random_device seed_gen;
-    mt19937 engine(seed_gen());
     shuffle(all(route.park_order), engine);
 
     shuffle(all(dest_0), engine);
@@ -535,7 +555,7 @@ Route generate_first_route() {
         } else {
             double min_dist = INF;
             int nearest_park = 0;
-            rep(j, 3) {
+            rep(j, min(unrestricted_park_num, kappa)) {
                 int park = route.park_order[j];
                 // dump(dist_cart[i][park], min_dist);
                 if (dist_cart[dest][park] < min_dist) {
@@ -563,8 +583,6 @@ Route generate_first_route_3_parks(int top_parks[3]) {
         route.park_order[index] = i;
         index++;
     }
-    random_device seed_gen;
-    mt19937 engine(seed_gen());
 
     shuffle(route.park_order.begin() + 3, route.park_order.end(), engine);
 
@@ -595,13 +613,69 @@ Route generate_first_route_3_parks(int top_parks[3]) {
             // 時間制限なし
             double min_dist = INF;
             int nearest_park = 0;
-            rep(j, 5) {
+            rep(j, min(unrestricted_park_num, kappa)) {
                 int park = route.park_order[j];
                 // dump(dist_cart[i][park], min_dist);
                 if (dist_cart[dest][park] < min_dist) {
                     min_dist = dist_cart[dest][park];
                     nearest_park = park;
                     // dump(i, park, nearest_park);
+                }
+            }
+            route.dest_order[nearest_park].push_back(dest);
+        }
+    }
+    return route;
+}
+
+// 初期ルート作成（最初の 4 park を全通り試す）
+Route generate_first_route_4_parks(int top_parks[4]) {
+    Route route;
+    route.park_order[0] = top_parks[0];
+    route.park_order[1] = top_parks[1];
+    route.park_order[2] = top_parks[2];
+    route.park_order[3] = top_parks[3];
+    int index = 3;
+    rep(i, kappa) {
+        if (i == top_parks[0] || i == top_parks[1] || i == top_parks[2] ||
+            i == top_parks[3])
+            continue;
+        route.park_order[index] = i;
+        index++;
+    }
+
+    shuffle(route.park_order.begin() + 4, route.park_order.end(), engine);
+
+    shuffle(all(dest_0), engine);
+    shuffle(all(dest_120), engine);
+    shuffle(all(dest_240), engine);
+    rep(i, lambda) {
+        int dest = (i < dest_120.size()
+                        ? dest_120[i]
+                        : i < dest_120.size() + dest_240.size()
+                              ? dest_240[i - dest_120.size()]
+                              : dest_0[i - dest_120.size() - dest_240.size()]);
+        if (i < dest_120.size() + dest_240.size()) {
+            // 時間制限あり
+            double min_dist = INF;
+            int nearest_park = 0;
+            rep(j, 4) {
+                int park = route.park_order[j];
+                if (dist_cart[dest][park] < min_dist) {
+                    min_dist = dist_cart[dest][park];
+                    nearest_park = park;
+                }
+            }
+            route.dest_order[nearest_park].push_back(dest);
+        } else {
+            // 時間制限なし
+            double min_dist = INF;
+            int nearest_park = 0;
+            rep(j, min(unrestricted_park_num, kappa)) {
+                int park = route.park_order[j];
+                if (dist_cart[dest][park] < min_dist) {
+                    min_dist = dist_cart[dest][park];
+                    nearest_park = park;
                 }
             }
             route.dest_order[nearest_park].push_back(dest);
@@ -650,6 +724,35 @@ Route select_first_route_3_parks() {
     return selected;
 }
 
+Route select_first_route_4_parks() {
+    Route selected;
+    double best_score = 0;
+    int top_parks[4];
+    rep(i, kappa) {
+        rep(j, kappa) {
+            if (i == j) continue;
+            rep(k, kappa) {
+                if (k == i || k == j) continue;
+                rep(l, kappa) {
+                    if (l == i || l == j || l == k) continue;
+                    top_parks[0] = i;
+                    top_parks[1] = j;
+                    top_parks[2] = k;
+                    top_parks[3] = l;
+                    Route route = generate_first_route_4_parks(top_parks);
+                    double s = get<0>(score(route));
+                    // double s = score_modified(route).first;
+                    if (s > best_score) {
+                        selected = route;
+                        best_score = s;
+                    }
+                }
+            }
+        }
+    }
+    return selected;
+}
+
 // 山登り法
 Route greedy_search(Route current_route, double second) {
     double current_score = get<0>(score(current_route));
@@ -680,16 +783,20 @@ pair<Route, double> annealing(Route current_route, double second,
         double t = elapsed_time / second; // (0, 1)
         double temp =
             start_temp + (end_temp - start_temp) * (3 * t * t - 2 * t * t * t);
+        // double temp = start_temp + (end_temp - start_temp) * t * t;
         // double temp = start_temp + (end_temp - start_temp) * t;
 
         // current_route を一部変更（ undo 用情報を取得）
-        int step = 5 * (t - 1) * (t - 1) + 1;
-        // int step = 10;
-        vector<vector<int>> params(step);
-        rep(i, step) {
-            params[i] = inplace_change(current_route);
-        }
-        // auto param = inplace_change(current_route);
+        // int step = MAX_CHANGE_STEP * (t - 1) * (t - 1) + 1;
+        // int step = MAX_CHANGE_STEP * (1 - t) + 1;
+
+        // int max_step = MAX_CHANGE_STEP * (t - 1) * (t - 1) + 2;
+        // int step = engine() % max_step + 1;
+        // vector<vector<int>> params(step);
+        // rep(i, step) {
+        //     params[i] = inplace_change(current_route);
+        // }
+        auto param = inplace_change(current_route);
 
         // 新状態での得点を計算
         double next_score = get<0>(score(current_route));
@@ -698,7 +805,8 @@ pair<Route, double> annealing(Route current_route, double second,
         double probability = exp((next_score - current_score) / temp);
 
         // 新状態に強制的に遷移するかどうかのフラグ
-        bool force_next = probability > drand(0, 1);
+        // bool force_next = probability > drand();
+        bool force_next = probability * engine.max() > engine();
 
         if (current_score < 0 || next_score > current_score ||
             (force_next && next_score > 0)) {
@@ -711,10 +819,10 @@ pair<Route, double> annealing(Route current_route, double second,
                 best_route = current_route;
             }
         } else {
-            // undo(current_route, param);
-            reprev(i, step) {
-                undo(current_route, params[i]);
-            }
+            undo(current_route, param);
+            // reprev(i, step) {
+            //     undo(current_route, params[i]);
+            // }
         }
     }
     return mp(best_route, best_score);
@@ -738,7 +846,7 @@ pair<Route, double> annealing_modified_score(Route current_route, double second,
         // double temp = start_temp + (end_temp - start_temp) * t;
 
         // current_route を一部変更（ undo 用情報を取得）
-        int step = 5 * (t - 1) * (t - 1) + 1;
+        int step = MAX_CHANGE_STEP * (t - 1) * (t - 1) + 1;
         // int step = 1;
         vector<vector<int>> params(step);
         rep(i, step) {
@@ -752,7 +860,7 @@ pair<Route, double> annealing_modified_score(Route current_route, double second,
         double next_true_score = scores.second;
         // 最高得点を更新したら諸々の更新
         if (next_true_score > best_score) {
-            dump(next_true_score, next_true_score, elapsed_time, temp);
+            dump(next_score, next_true_score, elapsed_time, temp, step);
             best_score = next_true_score;
             best_route = current_route;
         }
@@ -761,7 +869,7 @@ pair<Route, double> annealing_modified_score(Route current_route, double second,
         double probability = exp((next_score - current_score) / temp);
 
         // 新状態に強制的に遷移するかどうかのフラグ
-        bool force_next = probability > drand(0, 1);
+        bool force_next = probability * engine.max() > engine();
 
         if (current_score < 0 || next_score > current_score ||
             (force_next && next_score > 0)) {
@@ -813,7 +921,7 @@ pair<Route, double> annealing_th(Route current_route, double second,
         double probability = exp((next_score - current_score) / temp);
 
         // 新状態に強制的に遷移するかどうかのフラグ
-        bool force_next = probability > drand(0, 1);
+        bool force_next = probability * engine.max() > engine();
 
         if (current_score < 0 || next_score > current_score ||
             (force_next && next_score > 0)) {
@@ -845,6 +953,15 @@ void output_route(Route &route) {
 int main() {
     start = std::chrono::system_clock::now();
     cin >> kappa >> lambda;
+    double start_temp;
+    if (kappa >= 20) {
+        start_temp = START_TEMP_1;
+        unrestricted_park_num = UNRESTRICTED_PARK_NUM_1;
+    } else {
+        start_temp = START_TEMP_2;
+        unrestricted_park_num = UNRESTRICTED_PARK_NUM_2;
+    }
+
     parks = vector<tuple<string, double, double>>(kappa);
     dests = vector<tuple<string, double, int>>(lambda);
     dest_0.reserve(lambda);
@@ -897,15 +1014,15 @@ int main() {
             // 初期ルートで 3 park 全探索
             initial_route = select_first_route_3_parks();
         } else {
-            initial_route = select_first_route(10000);
+            initial_route = select_first_route(FIRST_ROUTE_SEARCH);
         }
         if (USE_MODIFIED_SCORE) {
             best_route = annealing_modified_score(initial_route, TIME_LIMIT,
-                                                  START_TEMP, END_TEMP)
+                                                  start_temp, END_TEMP)
                              .first;
         } else {
             best_route =
-                annealing(initial_route, TIME_LIMIT, START_TEMP, END_TEMP)
+                annealing(initial_route, TIME_LIMIT, start_temp, END_TEMP)
                     .first;
         }
     } else {
@@ -916,20 +1033,20 @@ int main() {
                 // 初期ルートで 3 park 全探索
                 initial_route = select_first_route_3_parks();
             } else {
-                initial_route = select_first_route(10000);
+                initial_route = select_first_route(FIRST_ROUTE_SEARCH);
             }
             Route cand_route;
             double cand_score;
             if (USE_MODIFIED_SCORE) {
                 auto result = annealing_modified_score(
-                    initial_route, TIME_LIMIT * (i + 1) / TRIAL, START_TEMP,
+                    initial_route, TIME_LIMIT * (i + 1) / TRIAL, start_temp,
                     END_TEMP);
                 cand_route = result.first;
                 cand_score = result.second;
             } else {
                 auto result =
                     annealing(initial_route, TIME_LIMIT * (i + 1) / TRIAL,
-                              START_TEMP, END_TEMP);
+                              start_temp, END_TEMP);
                 cand_route = result.first;
                 cand_score = result.second;
             }
