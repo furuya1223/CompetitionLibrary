@@ -10,24 +10,21 @@
 
 using namespace std;
 
-constexpr int TRIAL = 1;         // 試行回数
-constexpr bool PARK3ALL1 = true; // 最初の 3 park を全探索するか乱択か
-constexpr bool PARK3ALL2 = true; // 最初の 3 park を全探索するか乱択か
-bool park3all; // 最初の 3 park を全探索するか乱択か
+constexpr int TRIAL = 1;        // 試行回数
+constexpr bool PARK3ALL = true; // 最初の 3 park を全探索するか乱択か
 constexpr int FIRST_ROUTE_SEARCH = 10000; // PARK3ALL が false なら有効
 int unrestricted_park_num;
-constexpr int UNRESTRICTED_PARK_NUM_1 = 5; // 無制限配達先の対象 park 数
-constexpr int UNRESTRICTED_PARK_NUM_2 = 5; // 無制限配達先の対象 park 数
-constexpr int RETRICTED_PARK_NUM = 5;
+constexpr int UNRESTRICTED_PARK_NUM_1 = 10; // 無制限配達先の対象 park 数
+constexpr int UNRESTRICTED_PARK_NUM_2 = 10; // 無制限配達先の対象 park 数
 constexpr bool USE_MODIFIED_SCORE = false; // 修正スコアを使用するか
-constexpr int MAX_CHANGE_STEP = 5;
+constexpr int MAX_CHANGE_STEP = 3;
 constexpr bool RANDOM_CHANGE_STEP = false; //  swap 回数をランダムにするか
 constexpr bool FIXED_STEP = false;
 
 constexpr double START_TEMP_1 = 1000;
 constexpr double START_TEMP_2 = 1000;
-constexpr double END_TEMP = 5;
-constexpr double TIME_LIMIT = 59.99;
+constexpr double END_TEMP = 20;
+constexpr double TIME_LIMIT = 59.9;
 
 int benchmark_count = 0;
 
@@ -251,15 +248,17 @@ finished:
 }
 
 // 配達数を増やすようスコアを改変（探索用なのでスコアのみ返す）
-inline double score_modified(const Route &route) {
+// (modified_score, true_score)
+inline pair<double, double> score_modified(const Route &route) {
     double current_time = 0;
     int prev_park = -1;
-    int finish_i = kappa;
-    int finish_j = 0;
+    int finish_i = 0;
+    int finish_j = -1;
     int complete = 0;
-    double true_score = -1;
-    double penalty = 0;
+    double complete_time;
     double reward = 0;
+    double penalty = 0;
+    double true_score = -1;
 
     // 配達
     rep(i, kappa) {
@@ -269,7 +268,7 @@ inline double score_modified(const Route &route) {
         if (prev_park != -1) {
             if (dist_car[prev_park][park] < -EPS) {
                 // 移動不可能
-                return -1;
+                return mp(-1, -1);
             }
             current_time += dist_car[prev_park][park]; // 車両での移動
             current_time += get<2>(parks[park]);       // 降車
@@ -279,6 +278,9 @@ inline double score_modified(const Route &route) {
         int prev_dest = park;
         int count = 0;
         rep(j, route.dest_order[park].size()) {
+            if (get_elapsed_sec() > TIME_LIMIT) {
+                return mp(-1, -1);
+            }
             int dest = route.dest_order[park][j] + kappa;
             if (count == 10) {
                 // 一度車両に戻る
@@ -296,24 +298,37 @@ inline double score_modified(const Route &route) {
             if (get<2>(dests[dest - kappa]) != 0 &&
                 current_time > get<2>(dests[dest - kappa]) + EPS) {
                 // 時間切れ
-                return -1;
+                return mp(-1, -1);
             }
             if (current_time > 240 + EPS) {
                 // 現在の配達先は失敗
+                // if (current_time > 360) {
+                //     finish = true;
+                //     break;
+                // }
+                // reward += 10000 * exp(-(current_time - 240) * 0.14);
+                // reward += (1 - (current_time - 240) / 120);
+
+                // 真のスコアを記録
                 if (true_score < 0) {
+                    finish_i = i;
+                    finish_j = j - 1;
                     true_score = complete * 10000.0 + 14400 - current_time * 60;
-                    finish_i = i, finish_j = j - 1;
                 } else {
-                    penalty = current_time * 0.01;
+                    penalty += current_time;
                     goto finished;
                 }
+                // goto finished;
+            } else {
+                ++complete;
             }
             // 配達完了
-            ++complete;
             ++count;
+            // penalty += current_time * 0.0001;
             if (complete == lambda) {
                 // すべて配達
-                finish_i = i, finish_j = j;
+                finish_i = i;
+                finish_j = j;
                 goto finished;
             }
             prev_dest = dest;
@@ -330,20 +345,15 @@ inline double score_modified(const Route &route) {
 finished:
     // 配達制限チェック
     if (!check_route(route, finish_i, finish_j)) {
-        return -1;
+        return mp(-1, -1);
     }
 
-    return true_score + reward - penalty;
+    return mp(true_score + reward - penalty, true_score);
 }
 
 inline vector<int> inplace_change(Route &route) {
-    constexpr int mode1 = 1;
-    constexpr int mode2 = mode1 + 3;
-    constexpr int mode3 = mode2 + 3;
-    constexpr int mode4 = mode3 + 3;
-
-    int mode = engine() % mode4;
-    if (mode < mode1) {
+    int mode = engine() % 4;
+    if (mode == 0) {
         // park を swap
         int i = engine() % kappa;
         int j;
@@ -352,12 +362,15 @@ inline vector<int> inplace_change(Route &route) {
         } while (i == j);
         std::swap(route.park_order[i], route.park_order[j]);
         return {0, i, j};
-    } else if (mode < mode2) {
-        // park 内で i, j を swap
+    } else if (mode == 1) {
         int p = engine() % kappa;
         while (route.dest_order[p].size() < 2) {
             p = (p + 1) % kappa;
         }
+        // rep(_, 100) {
+        //     p = engine() % kappa;
+        //     if (route.dest_order[p].size() >= 2) break;
+        // }
         if (route.dest_order[p].size() < 2) return {-1};
         int i = engine() % route.dest_order[p].size();
         int j;
@@ -366,7 +379,7 @@ inline vector<int> inplace_change(Route &route) {
         } while (i == j);
         std::swap(route.dest_order[p][i], route.dest_order[p][j]);
         return {1, p, i, j};
-    } else if (mode < mode3) {
+    } else if (mode == 3) {
         int p1;
         do {
             p1 = engine() % kappa;
@@ -457,7 +470,7 @@ Route generate_first_route() {
         if (i < dest_120.size() + dest_240.size()) {
             double min_dist = INF;
             int nearest_park = 0;
-            rep(j, RETRICTED_PARK_NUM) {
+            rep(j, 3) {
                 int park = route.park_order[j];
                 // dump(dist_cart[i][j], min_dist);
                 if (dist_cart[dest][park] < min_dist) {
@@ -667,7 +680,7 @@ pair<Route, double> annealing_modified_score(Route current_route, double second,
                                              double end_temp) {
     Route best_route;
     double best_score = 0;
-    double current_score = score_modified(current_route);
+    double current_score = score_modified(current_route).first;
     double start_time = get_elapsed_sec();
     double elapsed_time = 0;
     while ((elapsed_time = get_elapsed_sec()) < second) {
@@ -700,7 +713,9 @@ pair<Route, double> annealing_modified_score(Route current_route, double second,
         }
 
         // 新状態での得点を計算
-        double next_score = score_modified(current_route);
+        auto scores = score_modified(current_route);
+        double next_score = scores.first;
+        double next_true_score = scores.second;
 
         // 悪化したときに遷移する確率
         double probability = exp((next_score - current_score) / temp);
@@ -713,9 +728,9 @@ pair<Route, double> annealing_modified_score(Route current_route, double second,
             // 次の状態に遷移する
             current_score = next_score;
             // 最高得点を更新したら諸々の更新
-            if (next_score > best_score) {
-                dump(next_score, elapsed_time, temp);
-                best_score = next_score;
+            if (next_true_score > best_score) {
+                dump(next_score, next_true_score, elapsed_time, temp);
+                best_score = next_true_score;
                 best_route = current_route;
             }
         } else {
@@ -741,16 +756,6 @@ void output_route(Route &route) {
     output_route(route, finish_i, finish_j);
 }
 
-inline double car_time(const Route &route) {
-    double total_time;
-    rep(i, kappa) {
-        total_time +=
-            dist_car[route.park_order[i]][route.park_order[(i + 1) % kappa]];
-    }
-    return total_time;
-}
-inline Route tsp_car() {}
-
 int main() {
     start = std::chrono::system_clock::now();
     cin >> kappa >> lambda;
@@ -758,11 +763,9 @@ int main() {
     if (kappa >= 20) {
         start_temp = START_TEMP_1;
         unrestricted_park_num = UNRESTRICTED_PARK_NUM_1;
-        park3all = false;
     } else {
         start_temp = START_TEMP_2;
         unrestricted_park_num = UNRESTRICTED_PARK_NUM_2;
-        park3all = true;
     }
 
     parks = vector<tuple<string, double, double>>(kappa);
@@ -793,13 +796,16 @@ int main() {
     }
     dist_car = make_v(kappa, kappa, 0.0);
     dist_cart = make_v(lambda, kappa + lambda, 0.0);
+    double dist_car_mean = 0;
     rep(i, kappa) {
         rep(j, kappa) {
             double a;
             cin >> a;
             dist_car[i][j] = a / 250.0;
+            dist_car_mean += a;
         }
     }
+    dist_car_mean /= (kappa) * (kappa - 1);
     rep(i, lambda) {
         rep(j, kappa + lambda) {
             double b;
@@ -813,7 +819,7 @@ int main() {
     if (TRIAL == 1) {
         // 1 回のみ試行
         Route initial_route;
-        if (park3all) {
+        if (PARK3ALL) {
             // 初期ルートで 3 park 全探索
             initial_route = select_first_route_3_parks();
         } else {
@@ -832,7 +838,7 @@ int main() {
         // 複数回試行
         Route initial_route;
         rep(i, TRIAL) {
-            if (park3all) {
+            if (PARK3ALL) {
                 // 初期ルートで 3 park 全探索
                 initial_route = select_first_route_3_parks();
             } else {
