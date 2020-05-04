@@ -1,3 +1,5 @@
+[![Actions Status](https://github.com/furuya1223/CompetitionLibrary/workflows/verify/badge.svg)](https://github.com/furuya1223/CompetitionLibrary/actions)
+
 # 競技プログラミング用ライブラリ by furuya1223
 
 作成者：ふるやん
