@@ -61,7 +61,7 @@ class WaveletMatrix {
   public:
     WaveletMatrix(vector<long long> v) {
         len = v.size();
-        long long max_value = *max_element(all(v));
+        long long max_value = *max_element(v.begin(), v.end());
         while (max_value > 0) {
             max_value >>= 1;
             digit++;
@@ -71,34 +71,34 @@ class WaveletMatrix {
         bit_vectors.reserve(digit);
         cumulative_sum.reserve(digit);
         num_zero = vector<int>(digit, 0);
-        rep(d, digit) {
+        for (int d = 0; d < digit; d++) {
             bit_vectors.emplace_back(len);
             cumulative_sum.emplace_back(len + 1, 0);
             // 累積和を記録
-            rep(i, len) {
+            for (int i = 0; i < len; i++) {
                 cumulative_sum[d][i + 1] = cumulative_sum[d][i] + v[i];
             }
             // ビットベクトルの構築
-            rep(i, len) {
+            for (int i = 0; i < len; i++) {
                 bit_vectors[d].push(v[i] >> (digit - 1 - d) & 1);
             }
             // 安定ソート
             vector<long long> temp;
             temp.reserve(len);
-            rep(i, len) {
+            for (int i = 0; i < len; i++) {
                 if ((v[i] >> (digit - 1 - d) & 1) == 0) {
                     temp.push_back(v[i]);
                     num_zero[d]++;
                 }
             }
-            rep(i, len) {
+            for (int i = 0; i < len; i++) {
                 if ((v[i] >> (digit - 1 - d) & 1) == 1) {
                     temp.push_back(v[i]);
                 }
             }
             v = temp;
         }
-        reprev(i, len) {
+        for (int i = len - 1; i >= 0; i--) {
             start[v[i]] = i;
         }
         sorted = v;
@@ -107,7 +107,7 @@ class WaveletMatrix {
     // n 番目（0-indexed）の値を得る
     long long operator[](int n) const {
         int ans = 0;
-        rep(d, digit) {
+        for (int d = 0; d < digit; d++) {
             ans <<= 1;
             ans += bit_vectors[d][n];
             if (bit_vectors[d][n] == 1) {
@@ -122,7 +122,7 @@ class WaveletMatrix {
     // [0, n) に x がいくつ含まれるか
     int rank(int n, long long x) {
         if (start.find(x) == start.end()) return 0;
-        rep(d, digit) {
+        for (int d = 0; d < digit; d++) {
             if ((x >> (digit - 1 - d) & 1) == 1) {
                 n = num_zero[d] + bit_vectors[d].rank(n, 1);
             } else {
@@ -137,7 +137,7 @@ class WaveletMatrix {
         if (start.find(x) == start.end() || sorted[start[x] + n] != x)
             return -1;
         n = start[x] + n;
-        reprev(d, digit) {
+        for (int d = digit - 1; d >= 0; d--) {
             if ((x >> (digit - 1 - d) & 1) == 1) {
                 n = bit_vectors[d].select[1][n - num_zero[d]];
             } else {
@@ -149,7 +149,7 @@ class WaveletMatrix {
 
     // [l, r) で n 番目（0-indexed）に小さい値 O(log(max))
     long long quantile(int l, int r, int n) {
-        rep(d, digit) {
+        for (int d = 0; d < digit; d++) {
             if (bit_vectors[d].rank(r, 0) - bit_vectors[d].rank(l, 0) > n) {
                 // 0
                 l = bit_vectors[d].rank(l, 0);
@@ -169,22 +169,22 @@ class WaveletMatrix {
         vector<pair<long long, int>> res;
         res.reserve(k);
         priority_queue<tuple<int, int, int, int>> pq;
-        pq.push(mt(r - l, 0, l, r));
+        pq.push(make_tuple(r - l, 0, l, r));
         while (!pq.empty() && res.size() < k) {
             int dummy, d;
             tie(dummy, d, l, r) = pq.top();
             pq.pop();
             if (d == digit) {
                 // 終わり
-                res.push_back(mp(sorted[l], r - l));
+                res.push_back(make_pair(sorted[l], r - l));
                 continue;
             }
             int l0 = bit_vectors[d].rank(l, 0);
             int r0 = bit_vectors[d].rank(r, 0);
             int l1 = num_zero[d] + bit_vectors[d].rank(l, 1);
             int r1 = num_zero[d] + bit_vectors[d].rank(r, 1);
-            pq.push(mt(r0 - l0, d + 1, l0, r0));
-            pq.push(mt(r1 - l1, d + 1, l1, r1));
+            pq.push(make_tuple(r0 - l0, d + 1, l0, r0));
+            pq.push(make_tuple(r1 - l1, d + 1, l1, r1));
         }
         return res;
     }
@@ -195,7 +195,7 @@ class WaveletMatrix {
         if (l >= r) return 0;
         if (x >= 1LL << (digit)) return r - l;
         int ans = 0;
-        rep(d, digit) {
+        for (int d = 0; d < digit; d++) {
             if ((x >> (digit - 1 - d) & 1) == 1) {
                 ans += bit_vectors[d].rank(r, 0) - bit_vectors[d].rank(l, 0);
                 l = num_zero[d] + bit_vectors[d].rank(l, 1);
@@ -218,7 +218,7 @@ class WaveletMatrix {
         if (l >= r) return 0;
         long long ans = 0;
         stack<tuple<int, int, int, int>> st;
-        st.push(mt(0, 0, l, r)); // d, 範囲内理論最小値, l, r
+        st.push(make_tuple(0, 0, l, r)); // d, 範囲内理論最小値, l, r
         while (!st.empty()) {
             int d;
             long long min_value;
@@ -244,17 +244,17 @@ class WaveletMatrix {
             int r0 = bit_vectors[d].rank(r, 0);
             int l1 = num_zero[d] + bit_vectors[d].rank(l, 1);
             int r1 = num_zero[d] + bit_vectors[d].rank(r, 1);
-            if (l0 < r0) st.push(mt(d + 1, min_value, l0, r0));
+            if (l0 < r0) st.push(make_tuple(d + 1, min_value, l0, r0));
             if (l1 < r1)
-                st.push(
-                    mt(d + 1, min_value + (1LL << (digit - d - 1)), l1, r1));
+                st.push(make_tuple(d + 1, min_value + (1LL << (digit - d - 1)),
+                                   l1, r1));
         }
         return ans;
     }
 };
 
 int main() {
-    vi v = {5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0};
+    vll v = {5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0};
     WaveletMatrix wm(v);
 
     rep(i, v.size()) {
@@ -291,7 +291,8 @@ int main() {
     assert(wm.quantile(1, 11, 8) == 5);
     assert(wm.quantile(1, 11, 9) == 6);
 
-    assert(wm.topk(2, 9, 2) == vPi({mp(5, 3), mp(1, 2)}));
+    using P_LL_I = pair<long long, int>;
+    assert(wm.topk(2, 9, 2) == vector<P_LL_I>({mp(5LL, 3), mp(1LL, 2)}));
 
     assert(wm.less_freq(1, 11, 0) == 0);
     assert(wm.less_freq(1, 11, 1) == 0);
