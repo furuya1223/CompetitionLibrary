@@ -34,13 +34,6 @@ layout: default
 
 ## Library Files
 
-<div id="5058f1af8388633f609cadb75a75dc9d"></div>
-
-### .
-
-* :warning: <a href="library/blog.cpp.html">blog.cpp</a>
-
-
 <div id="d521f765a49c72507257a2620612ee96"></div>
 
 ### library
