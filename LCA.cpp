@@ -1,15 +1,17 @@
-/*
+#include "header.hpp"
+
 class LCA {
 public:
 	int N;
-	vi depth;
+    int root;
+    vector<int> depth;
 	int maxdepth = 0;
 	vvi dblpar;
- 
-	LCA(const Graph &G) {
+
+	LCA(const Graph<int> &G, int root = 0): root(root) {
 		N = G.size();
 		depth = vi(N);
-		dfs1(G, 0, -1);
+		dfs1(G, root, -1);
 		int D = bindigit(maxdepth) + 1;
 		dblpar = vvi(D, vi(N));
 		rep(i, D) {
@@ -17,7 +19,7 @@ public:
 		}
 	}
  
-	void dfs1(const Graph &G, int pos, int par, int d = 0) {
+	void dfs1(const Graph<int> &G, int pos, int par, int d = 0) {
 		depth[pos] = d;
 		maxdepth = max(maxdepth, d);
 		for (auto e : G[pos]) {
@@ -26,7 +28,7 @@ public:
 		}
 	}
  
-	void dfs2(const Graph &G, int pos, int par, int dbl) {
+	void dfs2(const Graph<int> &G, int pos, int par, int dbl) {
 		if (dbl == 0) {
 			dblpar[0][pos] = par;
 		}
@@ -83,4 +85,3 @@ public:
 		return depth[u] + depth[v] - 2 * depth[lca(u, v)];
 	}
 };
-*/
