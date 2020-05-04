@@ -40,44 +40,79 @@ using namespace std;
 #define RMAX 4294967295
 
 typedef long long ll;
-typedef pair< int, int > Pi;
-typedef pair< ll, ll > Pll;
-typedef pair< double, double > Pd;
-typedef vector< int > vi;
-typedef vector< ll > vll;
-typedef vector< bool > vb;
-typedef vector< char > vc;
-typedef vector< string > vs;
-typedef vector< double > vd;
-typedef vector< Pi > vPi;
-typedef vector< Pll > vPll;
-typedef vector< Pd > vPd;
-typedef vector< vector< int > > vvi;
-typedef vector< vector< bool > > vvb;
-typedef vector< vector< ll > > vvll;
-typedef vector< vector< char > > vvc;
-typedef vector< vector< string > > vvs;
-typedef vector< vector< double > > vvd;
-typedef vector< vector< Pi > > vvPi;
-typedef vector< vector< vector< int > > > vvvi;
-typedef vector< vector< vector< ll > > > vvvll;
-typedef vector< vector< vector< Pi > > > vvvPi;
-typedef vector< vector< vector< vector< Pi > > > > vvvvPi;
-typedef priority_queue< int, vector< int >, greater< int > > pqli;
-typedef priority_queue< ll, vector< ll >, greater< ll > > pqlll;
-typedef priority_queue< Pi, vector< Pi >, greater< Pi > > pqlP;
-template < class T > using vec = vector< T >;
-template < class T > using pql = priority_queue< T, vector< T >, greater< T > >;
+typedef pair<int, int> Pi;
+typedef pair<ll, ll> Pll;
+typedef pair<double, double> Pd;
+typedef vector<int> vi;
+typedef vector<ll> vll;
+typedef vector<bool> vb;
+typedef vector<char> vc;
+typedef vector<string> vs;
+typedef vector<double> vd;
+typedef vector<Pi> vPi;
+typedef vector<Pll> vPll;
+typedef vector<Pd> vPd;
+typedef vector<vector<int>> vvi;
+typedef vector<vector<bool>> vvb;
+typedef vector<vector<ll>> vvll;
+typedef vector<vector<char>> vvc;
+typedef vector<vector<string>> vvs;
+typedef vector<vector<double>> vvd;
+typedef vector<vector<Pi>> vvPi;
+typedef vector<vector<vector<int>>> vvvi;
+typedef vector<vector<vector<ll>>> vvvll;
+typedef vector<vector<vector<Pi>>> vvvPi;
+typedef vector<vector<vector<vector<Pi>>>> vvvvPi;
+typedef priority_queue<int, vector<int>, greater<int>> pqli;
+typedef priority_queue<ll, vector<ll>, greater<ll>> pqlll;
+typedef priority_queue<Pi, vector<Pi>, greater<Pi>> pqlP;
+template <class T>
+using vec = vector<T>;
+template <class T>
+using pql = priority_queue<T, vector<T>, greater<T>>;
 
+template <class T>
 struct Edge {
-    int from, to, cost;
+    int from, to;
+    T cost;
     bool operator<(Edge e) {
         return cost < e.cost;
     }
+    Edge(int f, int t, T c) : from(f), to(t), cost(c) {}
 };
 
-using Graph = vec<vec<Edge>>;
-ostream &operator<<(ostream &os, Edge &edge) {
+template <class T>
+ostream &operator<<(ostream &os, Edge<T> &edge) {
     os << "(" << edge.from << "->" << edge.to << ":" << edge.cost << ")";
     return os;
 }
+template <class T = int>
+class Graph {
+    int n;
+    bool directed;
+    vector<vector<Edge<T>>> edges;
+
+  public:
+    Graph(int n, bool directed)
+        : n(n), directed(directed), edges(vector<vector<Edge<T>>>(n)) {}
+
+    void add_edge(int s, int t, T cost) {
+        edges[s].emplace_back(s, t, cost);
+        if (!directed) {
+            edges[t].emplace_back(t, s, cost);
+        }
+    }
+    Graph() {}
+
+    vector<Edge<T>> &operator[](size_t i) {
+        return edges[i];
+    }
+
+    vector<Edge<T>> &operator[](size_t i) const {
+        return edges[i];
+    }
+
+    int size() const {
+        return n;
+    }
+};
