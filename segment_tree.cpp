@@ -32,6 +32,7 @@ class SegTree {
         }
         data = vector<T>(2 * n - 1, def);
     }
+    SegTree() {}
 
     // 場所i(0-indexed)の値をxで更新
     void change(int i, T x) {
@@ -54,7 +55,7 @@ class SegTree {
     }
 };
 
-// 区間加算区間和型
+// 遅延伝播セグ木
 template <class T, class U>
 class LazySegTree {
     /*
@@ -126,11 +127,10 @@ class LazySegTree {
     // _n:必要サイズ, _def:初期値, _operation:クエリ関数,
     // _adapt_lazy:区間作用素適用関数, _merge_lazy:区間作用素マージ関数,
     // _multiply_lazy:作用素を要素数で変形
-    LazySegTree(size_t _n, T _init, T _def, T _lazy_def,
-                function<T(T, T)> _operation, function<T(T, U)> _adapt_lazy,
-                function<U(U, U)> _merge_lazy,
-                function<U(U, int)> _multiply_lazy = [](U u,
-                                                        int n) { return u; })
+    LazySegTree(
+        size_t _n, T _init, T _def, T _lazy_def, function<T(T, T)> _operation,
+        function<T(T, U)> _adapt_lazy, function<U(U, U)> _merge_lazy,
+        function<U(U, int)> _multiply_lazy = [](U u, int n) { return u; })
         : init(_init), def(_def), lazy_def(_lazy_def), operation(_operation),
           adapt_lazy(_adapt_lazy), merge_lazy(_merge_lazy),
           multiply_lazy(_multiply_lazy) {
