@@ -60,8 +60,7 @@ class Mat {
             exit(1);
         }
         Mat<T> ret(height(), width());
-        rep(i, height()) rep(j, width()) ret[i][j] =
-            (_dat[i][j] + b[i][j]) % mod;
+        rep(i, height()) rep(j, width()) ret[i][j] = (_dat[i][j] + b[i][j]) % mod;
         return ret;
     }
     Mat<T> operator-(Mat &b) {
@@ -70,8 +69,7 @@ class Mat {
             exit(1);
         }
         Mat<T> ret(height(), width());
-        rep(i, height()) rep(j, width()) ret[i][j] =
-            (_dat[i][j] - b[i][j] + mod) % mod;
+        rep(i, height()) rep(j, width()) ret[i][j] = (_dat[i][j] - b[i][j] + mod) % mod;
         return ret;
     }
     Mat<T> operator*(Mat b) {
@@ -135,7 +133,6 @@ class Mat {
         double buf;
         rep(i, N) {
             buf = 1 / (double)copy[i][i];
-            // (i,i)ê¨ï™Ç1Ç…Ç∑ÇÈ
             rep(j, N) {
                 copy[i][j] *= buf;
                 ret[i][j] *= buf;
