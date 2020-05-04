@@ -31,7 +31,7 @@ layout: default
 
 * category: <a href="../../index.html#d521f765a49c72507257a2620612ee96">library</a>
 * <a href="{{ site.github.repository_url }}/blob/master/library/hl_decomposition.hpp">View this file on GitHub</a>
-    - Last commit date: 2020-05-04 16:27:14+09:00
+    - Last commit date: 2020-05-04 17:13:00+09:00
 
 
 
@@ -46,6 +46,7 @@ layout: default
 <a id="unbundled"></a>
 {% raw %}
 ```cpp
+// cf. https://tubo28.me/compprog/algorithm/hld/
 #include "header.hpp"
 
 template <class T>
@@ -58,17 +59,16 @@ struct HLDecomposition {
     vector<int> depth;          // 根からの距離
     vector<int> head;           // 自身を含む chain の先頭の頂点
     vector<int> last;           // 自身を含む chain の末尾の頂点
-    vector<int> next; // 自身が属する chain での次の頂点。範囲外なら -1
-    vector<int> prev; // 自身が属する chain での前の頂点。範囲外なら -1
-    vector<int> chain; // 自身が属する chain 番号
-    vector<int> idx;   // 自身が属する chain での自身の番号
+    vector<int> next;           // 自身が属する chain での次の頂点。範囲外なら -1
+    vector<int> prev;           // 自身が属する chain での前の頂点。範囲外なら -1
+    vector<int> chain;          // 自身が属する chain 番号
+    vector<int> idx;            // 自身が属する chain での自身の番号
     vector<int> encode; // 元の頂点番号をパスクエリ用に並べ替えた番号に変える
     vector<int> decode; // パスクエリ用に並べ替えた頂点番号を元の番号に変える
 
     HLDecomposition(Graph<T> &g_, int r = -1)
-        : g(g_), n(g.size()), chains(0), parent(n, 0), subsize(n, 0),
-          depth(n, -1), head(n, 0), last(n, 0), next(n, -1), prev(n, -1),
-          chain(n, -1), idx(n, 0), encode(n), decode(n) {
+        : g(g_), n(g.size()), chains(0), parent(n, 0), subsize(n, 0), depth(n, -1), head(n, 0),
+          last(n, 0), next(n, -1), prev(n, -1), chain(n, -1), idx(n, 0), encode(n), decode(n) {
         if (r != -1) decompose(r);
     }
 
@@ -223,6 +223,8 @@ vector<T> down(Graph<T> &G, int root, T def) {
 <a id="bundled"></a>
 {% raw %}
 ```cpp
+#line 1 "library/hl_decomposition.hpp"
+// cf. https://tubo28.me/compprog/algorithm/hld/
 #line 1 "library/header.hpp"
 
 
@@ -347,7 +349,7 @@ class Graph {
 };
 
 
-#line 2 "library/hl_decomposition.hpp"
+#line 3 "library/hl_decomposition.hpp"
 
 template <class T>
 struct HLDecomposition {
@@ -359,17 +361,16 @@ struct HLDecomposition {
     vector<int> depth;          // 根からの距離
     vector<int> head;           // 自身を含む chain の先頭の頂点
     vector<int> last;           // 自身を含む chain の末尾の頂点
-    vector<int> next; // 自身が属する chain での次の頂点。範囲外なら -1
-    vector<int> prev; // 自身が属する chain での前の頂点。範囲外なら -1
-    vector<int> chain; // 自身が属する chain 番号
-    vector<int> idx;   // 自身が属する chain での自身の番号
+    vector<int> next;           // 自身が属する chain での次の頂点。範囲外なら -1
+    vector<int> prev;           // 自身が属する chain での前の頂点。範囲外なら -1
+    vector<int> chain;          // 自身が属する chain 番号
+    vector<int> idx;            // 自身が属する chain での自身の番号
     vector<int> encode; // 元の頂点番号をパスクエリ用に並べ替えた番号に変える
     vector<int> decode; // パスクエリ用に並べ替えた頂点番号を元の番号に変える
 
     HLDecomposition(Graph<T> &g_, int r = -1)
-        : g(g_), n(g.size()), chains(0), parent(n, 0), subsize(n, 0),
-          depth(n, -1), head(n, 0), last(n, 0), next(n, -1), prev(n, -1),
-          chain(n, -1), idx(n, 0), encode(n), decode(n) {
+        : g(g_), n(g.size()), chains(0), parent(n, 0), subsize(n, 0), depth(n, -1), head(n, 0),
+          last(n, 0), next(n, -1), prev(n, -1), chain(n, -1), idx(n, 0), encode(n), decode(n) {
         if (r != -1) decompose(r);
     }
 
