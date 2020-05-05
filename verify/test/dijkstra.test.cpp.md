@@ -25,13 +25,13 @@ layout: default
 <link rel="stylesheet" href="../../assets/css/copy-button.css" />
 
 
-# :x: test/dijkstra.test.cpp
+# :heavy_check_mark: test/dijkstra.test.cpp
 
 <a href="../../index.html">Back to top page</a>
 
 * category: <a href="../../index.html#098f6bcd4621d373cade4e832627b4f6">test</a>
 * <a href="{{ site.github.repository_url }}/blob/master/test/dijkstra.test.cpp">View this file on GitHub</a>
-    - Last commit date: 2020-05-05 13:59:10+09:00
+    - Last commit date: 2020-05-05 14:06:25+09:00
 
 
 * see: <a href="https://onlinejudge.u-aizu.ac.jp/courses/library/5/GRL/1/GRL_1_A">https://onlinejudge.u-aizu.ac.jp/courses/library/5/GRL/1/GRL_1_A</a>
@@ -39,8 +39,8 @@ layout: default
 
 ## Depends on
 
-* :x: <a href="../../library/library/graph.hpp.html">library/graph.hpp</a>
-* :question: <a href="../../library/library/header.hpp.html">library/header.hpp</a>
+* :heavy_check_mark: <a href="../../library/library/header.hpp.html">library/header.hpp</a>
+* :heavy_check_mark: <a href="../../library/library/shortest_path.hpp.html">library/shortest_path.hpp</a>
 
 
 ## Code
@@ -50,7 +50,7 @@ layout: default
 ```cpp
 #define PROBLEM "https://onlinejudge.u-aizu.ac.jp/courses/library/5/GRL/1/GRL_1_A"
 
-#include "../library/graph.hpp"
+#include "../library/shortest_path.hpp"
 
 int main(void) {
     int V, E, r;
@@ -204,9 +204,9 @@ class Graph {
 };
 
 
-#line 2 "library/graph.hpp"
+#line 2 "library/shortest_path.hpp"
 
-void Dijkstra(const Graph<int> &graph, int start, vector<long long> &cost) {
+void Dijkstra(Graph<int> &graph, int start, vector<long long> &cost) {
     cost.resize(graph.size());
     fill(cost.begin(), cost.end(), INFL);
     vector<int> prev(graph.size());
@@ -309,100 +309,6 @@ bool WarshallFloyd(vvll &graph, int V) {
         if (graph[i][i] < 0) return false;
     }
     return true;
-}
-
-vector<int> Centroid(const Graph<int> &G) {
-    int n = G.size();
-    vector<int> centroid;
-    vector<int> sz(n);
-    function<void(int, int)> dfs = [&](int u, int prev) {
-        sz[u] = 1;
-        bool is_centroid = true;
-        for (auto v : G[u])
-            if (v.to != prev) {
-                dfs(v.to, u);
-                sz[u] += sz[v.to];
-                if (sz[v.to] > n / 2) is_centroid = false;
-            }
-        if (n - sz[u] > n / 2) is_centroid = false;
-        if (is_centroid) centroid.push_back(u);
-    };
-    dfs(0, -1);
-    return centroid;
-}
-
-ll Chi_Liu_Edmonds(vector<Edge<int>> edges, int V, int start) {
-    vector<Pi> mins(V, mp(INF, -1));
-    rep(i, edges.size()) {
-        Edge<int> edge = edges[i];
-        mins[edge.to] = min(mins[edge.to], mp(edge.cost, edge.from));
-    }
-    mins[start] = mp(-1, -1);
-
-    vector<int> group(V, 0);
-    vector<bool> isCycle(V, false);
-    int count = 0;
-
-    vector<bool> used(V, false);
-    rep(i, V) {
-        if (used[i]) continue;
-        vector<int> chain;
-        int cursor = i;
-        while (cursor != -1 && !used[cursor]) {
-            used[cursor] = true;
-            chain.push_back(cursor);
-            cursor = mins[cursor].second;
-        }
-        if (cursor != -1) {
-            bool inCycle = false;
-            rep(j, chain.size()) {
-                group[chain[j]] = count;
-                if (chain[j] == cursor) {
-                    isCycle[count] = true;
-                    inCycle = true;
-                }
-                if (!inCycle) count++;
-            }
-            if (inCycle) count++;
-        } else {
-            rep(j, chain.size()) {
-                group[chain[j]] = count;
-                count++;
-            }
-        }
-    }
-
-    if (count == V) {
-        ll ans = 1;
-        rep(i, V) {
-            ans += mins[i].first;
-        }
-        return ans;
-    }
-
-    ll res = 0;
-    rep(i, V) {
-        if (i != start && isCycle[group[i]]) {
-            res += mins[i].first;
-        }
-    }
-
-    vector<Edge<int>> newEdges;
-    rep(i, edges.size()) {
-        Edge<int> edge = edges[i];
-        int to = edge.to;
-        int gfrom = group[edge.from];
-        int gto = group[edge.to];
-        if (gfrom == gto) {
-            continue;
-        } else if (isCycle[gto]) {
-            newEdges.push_back(Edge<int>(gfrom, gto, edge.cost - mins[to].first));
-        } else {
-            newEdges.push_back(Edge<int>(gfrom, gto, edge.cost));
-        }
-    }
-
-    return res + Chi_Liu_Edmonds(newEdges, count, group[start]);
 }
 #line 4 "test/dijkstra.test.cpp"
 

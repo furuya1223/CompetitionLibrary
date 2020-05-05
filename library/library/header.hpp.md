@@ -25,7 +25,7 @@ layout: default
 <link rel="stylesheet" href="../../assets/css/copy-button.css" />
 
 
-# :question: library/header.hpp
+# :heavy_check_mark: library/header.hpp
 
 <a href="../../index.html">Back to top page</a>
 
@@ -43,7 +43,7 @@ layout: default
 * :warning: <a href="extgcd_garner.hpp.html">library/extgcd_garner.hpp</a>
 * :warning: <a href="fft.hpp.html">library/fft.hpp</a>
 * :warning: <a href="geometry.hpp.html">library/geometry.hpp</a>
-* :x: <a href="graph.hpp.html">library/graph.hpp</a>
+* :warning: <a href="graph.hpp.html">library/graph.hpp</a>
 * :warning: <a href="hl_decomposition.hpp.html">library/hl_decomposition.hpp</a>
 * :warning: <a href="library.hpp.html">library/library.hpp</a>
 * :warning: <a href="low_link.hpp.html">library/low_link.hpp</a>
@@ -53,6 +53,7 @@ layout: default
 * :heavy_check_mark: <a href="min_cost_flow.hpp.html">library/min_cost_flow.hpp</a>
 * :warning: <a href="mod_int.hpp.html">library/mod_int.hpp</a>
 * :heavy_check_mark: <a href="segment_tree.hpp.html">library/segment_tree.hpp</a>
+* :heavy_check_mark: <a href="shortest_path.hpp.html">library/shortest_path.hpp</a>
 * :warning: <a href="string_algorithm.hpp.html">library/string_algorithm.hpp</a>
 * :warning: <a href="strongly_connected_component.hpp.html">library/strongly_connected_component.hpp</a>
 * :warning: <a href="suffix_array.hpp.html">library/suffix_array.hpp</a>
@@ -62,7 +63,7 @@ layout: default
 
 ## Verified with
 
-* :x: <a href="../../verify/test/dijkstra.test.cpp.html">test/dijkstra.test.cpp</a>
+* :heavy_check_mark: <a href="../../verify/test/dijkstra.test.cpp.html">test/dijkstra.test.cpp</a>
 * :heavy_check_mark: <a href="../../verify/test/max_flow_dinic.test.cpp.html">test/max_flow_dinic.test.cpp</a>
 * :heavy_check_mark: <a href="../../verify/test/min_cost_flow.test.cpp.html">test/min_cost_flow.test.cpp</a>
 * :heavy_check_mark: <a href="../../verify/test/segment_tree_RMQ.test.cpp.html">test/segment_tree_RMQ.test.cpp</a>

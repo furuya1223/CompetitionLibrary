@@ -39,7 +39,7 @@ layout: default
 
 ## Depends on
 
-* :question: <a href="../../library/library/header.hpp.html">library/header.hpp</a>
+* :heavy_check_mark: <a href="../../library/library/header.hpp.html">library/header.hpp</a>
 * :heavy_check_mark: <a href="../../library/library/segment_tree.hpp.html">library/segment_tree.hpp</a>
 
 
