@@ -1,4 +1,5 @@
 {
+"test/max_flow_dinic.test.cpp": "2020-05-05 12:01:30 +0900",
 "test/segment_tree_RMQ.test.cpp": "2020-05-04 16:27:14 +0900",
 "test/segment_tree_RSQ.test.cpp": "2020-05-04 16:27:14 +0900"
 }
