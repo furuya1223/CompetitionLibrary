@@ -25,25 +25,22 @@ layout: default
 <link rel="stylesheet" href="../../assets/css/copy-button.css" />
 
 
-# :heavy_check_mark: library/max_flow.hpp
+# :heavy_check_mark: test/max_flow_dinic.test.cpp
 
 <a href="../../index.html">Back to top page</a>
 
-* category: <a href="../../index.html#d521f765a49c72507257a2620612ee96">library</a>
-* <a href="{{ site.github.repository_url }}/blob/master/library/max_flow.hpp">View this file on GitHub</a>
+* category: <a href="../../index.html#098f6bcd4621d373cade4e832627b4f6">test</a>
+* <a href="{{ site.github.repository_url }}/blob/master/test/max_flow_dinic.test.cpp">View this file on GitHub</a>
     - Last commit date: 2020-05-05 12:01:30+09:00
 
 
+* see: <a href="https://onlinejudge.u-aizu.ac.jp/courses/library/5/GRL/6/GRL_6_A">https://onlinejudge.u-aizu.ac.jp/courses/library/5/GRL/6/GRL_6_A</a>
 
 
 ## Depends on
 
-* :heavy_check_mark: <a href="header.hpp.html">library/header.hpp</a>
-
-
-## Verified with
-
-* :heavy_check_mark: <a href="../../verify/test/max_flow_dinic.test.cpp.html">test/max_flow_dinic.test.cpp</a>
+* :heavy_check_mark: <a href="../../library/library/header.hpp.html">library/header.hpp</a>
+* :heavy_check_mark: <a href="../../library/library/max_flow.hpp.html">library/max_flow.hpp</a>
 
 
 ## Code
@@ -51,110 +48,31 @@ layout: default
 <a id="unbundled"></a>
 {% raw %}
 ```cpp
-#include "header.hpp"
+#define PROBLEM "https://onlinejudge.u-aizu.ac.jp/courses/library/5/GRL/6/GRL_6_A"
 
-class MaxFlow {
-    struct FlowEdge {
-        int to;
-        ll cap;
-        int rev;
-    };
-    vector<vector<FlowEdge>> flow_graph;
-    vector<long long> level; // Distance from source
-    vector<int> iter;        // How far have you finished looking
+#include "../library/max_flow.hpp"
 
-    // Calculate distance from source to other vertices
-    void bfs(int source) {
-        fill(level.begin(), level.end(), -1);
-        queue<int> que;
-        level[source] = 0;
-        que.push(source);
-        while (!que.empty()) {
-            int v = que.front();
-            que.pop();
-            for (int i = 0; i < flow_graph[v].size(); i++) {
-                FlowEdge &e = flow_graph[v][i];
-                if (e.cap > 0 && level[e.to] < 0) {
-                    level[e.to] = level[v] + 1;
-                    que.push(e.to);
-                }
-            }
-        }
+int main(void) {
+    int V, E;
+    cin >> V >> E;
+    MaxFlow mf(V);
+    rep(i, E) {
+        int u, v, c;
+        cin >> u >> v >> c;
+        mf.add_edge(u, v, c);
     }
+    cout << mf.max_flow(0, V - 1) << endl;
+}
 
-    // Search increasing path with DFS
-    long long dfs(int v, int target, long long f) {
-        if (v == target) return f;
-        for (int &i = iter[v]; i < flow_graph[v].size(); i++) {
-            FlowEdge &e = flow_graph[v][i];
-            if (e.cap > 0 && level[v] < level[e.to]) {
-                ll d = dfs(e.to, target, min(f, e.cap));
-                if (d > 0) {
-                    e.cap -= d;
-                    flow_graph[e.to][e.rev].cap += d;
-                    return d;
-                }
-            }
-        }
-        return 0;
-    }
-
-  public:
-    MaxFlow(int n) : flow_graph(n), level(n), iter(n) {}
-
-    void add_edge(int from, int to, ll cap) {
-        flow_graph[from].push_back(FlowEdge{to, cap, (int)flow_graph[to].size()});
-        flow_graph[to].push_back(FlowEdge{from, 0, (int)flow_graph[from].size() - 1});
-    }
-
-    // calculate max flow from s to target
-    ll max_flow(int source, int target) {
-        ll flow = 0;
-        while (true) {
-            bfs(source);
-            if (level[target] < 0) return flow;
-            fill(iter.begin(), iter.end(), 0);
-            long long f;
-            while ((f = dfs(source, target, INFL)) > 0) {
-                flow += f;
-            }
-        }
-    }
-};
-
-class ProjectSelection {
-    int num;
-    MaxFlow max_flow; // |V| = num+2, source = num, target = num+1
-    long long sum_reward = 0;
-
-  public:
-    ProjectSelection(vector<long long> rewards)
-        : num(rewards.size()), max_flow(rewards.size() + 2) {
-        for (int i = 0; i < num; i++) {
-            if (rewards[i] > 0) {
-                max_flow.add_edge(num, i, rewards[i]);
-                sum_reward += rewards[i];
-            } else {
-                max_flow.add_edge(i, num + 1, -rewards[i]);
-            }
-        }
-    }
-
-    // if choose i and not choose j, get penalty
-    void add_penalty(int i, int j, long long penalty) {
-        max_flow.add_edge(i, j, penalty);
-    }
-
-    long long max_reward() {
-        return sum_reward - max_flow.max_flow(num, num + 1);
-    }
-};
 ```
 {% endraw %}
 
 <a id="bundled"></a>
 {% raw %}
 ```cpp
+#line 1 "test/max_flow_dinic.test.cpp"
+#define PROBLEM "https://onlinejudge.u-aizu.ac.jp/courses/library/5/GRL/6/GRL_6_A"
+
 #line 1 "library/header.hpp"
 
 
@@ -377,6 +295,19 @@ class ProjectSelection {
         return sum_reward - max_flow.max_flow(num, num + 1);
     }
 };
+#line 4 "test/max_flow_dinic.test.cpp"
+
+int main(void) {
+    int V, E;
+    cin >> V >> E;
+    MaxFlow mf(V);
+    rep(i, E) {
+        int u, v, c;
+        cin >> u >> v >> c;
+        mf.add_edge(u, v, c);
+    }
+    cout << mf.max_flow(0, V - 1) << endl;
+}
 
 ```
 {% endraw %}

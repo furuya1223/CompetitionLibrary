@@ -49,7 +49,7 @@ layout: default
 * :warning: <a href="low_link.hpp.html">library/low_link.hpp</a>
 * :warning: <a href="lowest_common_ancestor.hpp.html">library/lowest_common_ancestor.hpp</a>
 * :warning: <a href="matrix.hpp.html">library/matrix.hpp</a>
-* :warning: <a href="max_flow.hpp.html">library/max_flow.hpp</a>
+* :heavy_check_mark: <a href="max_flow.hpp.html">library/max_flow.hpp</a>
 * :warning: <a href="min_cost_flow.hpp.html">library/min_cost_flow.hpp</a>
 * :warning: <a href="mod_int.hpp.html">library/mod_int.hpp</a>
 * :heavy_check_mark: <a href="segment_tree.hpp.html">library/segment_tree.hpp</a>
@@ -62,6 +62,7 @@ layout: default
 
 ## Verified with
 
+* :heavy_check_mark: <a href="../../verify/test/max_flow_dinic.test.cpp.html">test/max_flow_dinic.test.cpp</a>
 * :heavy_check_mark: <a href="../../verify/test/segment_tree_RMQ.test.cpp.html">test/segment_tree_RMQ.test.cpp</a>
 * :heavy_check_mark: <a href="../../verify/test/segment_tree_RSQ.test.cpp.html">test/segment_tree_RSQ.test.cpp</a>
 
