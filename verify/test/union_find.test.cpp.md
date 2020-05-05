@@ -25,25 +25,22 @@ layout: default
 <link rel="stylesheet" href="../../assets/css/copy-button.css" />
 
 
-# :heavy_check_mark: library/union_find.hpp
+# :heavy_check_mark: test/union_find.test.cpp
 
 <a href="../../index.html">Back to top page</a>
 
-* category: <a href="../../index.html#d521f765a49c72507257a2620612ee96">library</a>
-* <a href="{{ site.github.repository_url }}/blob/master/library/union_find.hpp">View this file on GitHub</a>
-    - Last commit date: 2020-05-04 16:27:14+09:00
+* category: <a href="../../index.html#098f6bcd4621d373cade4e832627b4f6">test</a>
+* <a href="{{ site.github.repository_url }}/blob/master/test/union_find.test.cpp">View this file on GitHub</a>
+    - Last commit date: 2020-05-05 12:55:21+09:00
 
 
+* see: <a href="https://onlinejudge.u-aizu.ac.jp/courses/library/3/DSL/1/DSL_1_A">https://onlinejudge.u-aizu.ac.jp/courses/library/3/DSL/1/DSL_1_A</a>
 
 
 ## Depends on
 
-* :heavy_check_mark: <a href="header.hpp.html">library/header.hpp</a>
-
-
-## Verified with
-
-* :heavy_check_mark: <a href="../../verify/test/union_find.test.cpp.html">test/union_find.test.cpp</a>
+* :heavy_check_mark: <a href="../../library/library/header.hpp.html">library/header.hpp</a>
+* :heavy_check_mark: <a href="../../library/library/union_find.hpp.html">library/union_find.hpp</a>
 
 
 ## Code
@@ -51,61 +48,26 @@ layout: default
 <a id="unbundled"></a>
 {% raw %}
 ```cpp
-#include "header.hpp"
+#define PROBLEM "https://onlinejudge.u-aizu.ac.jp/courses/library/3/DSL/1/DSL_1_A"
 
-class UnionFind {
-  public:
-    vector<int> par, rank, size_;
-    int num_;
+#include "../library/union_find.hpp"
 
-    UnionFind(int n) {
-        par = vector<int>(n);
-        rank = vector<int>(n);
-        size_ = vector<int>(n);
-        num_ = n;
-        for (int i = 0; i < n; i++) {
-            par[i] = i;
-            rank[i] = 0;
-            size_[i] = 1;
-        }
-    }
-
-    int find(int x) {
-        if (par[x] == x) {
-            return x;
+int main(void) {
+    int n, q;
+    cin >> n >> q;
+    UnionFind uf(n);
+    rep(i, q) {
+        int com, x, y;
+        cin >> com >> x >> y;
+        if (com == 0) {
+            // unite
+            uf.unite(x, y);
         } else {
-            return par[x] = find(par[x]);
+            // find
+            cout << (uf.same(x, y) ? 1 : 0) << '\n';
         }
     }
-
-    void unite(int x, int y) {
-        x = find(x);
-        y = find(y);
-        if (x == y) return;
-
-        num_--;
-        if (rank[x] < rank[y]) {
-            par[x] = y;
-            size_[y] += size_[x];
-        } else {
-            par[y] = x;
-            size_[x] += size_[y];
-            if (rank[x] == rank[y]) rank[x]++;
-        }
-    }
-
-    bool same(int x, int y) {
-        return find(x) == find(y);
-    }
-
-    int size(int x) {
-        return size_[find(x)];
-    }
-
-    int num() {
-        return num_;
-    }
-};
+}
 
 ```
 {% endraw %}
@@ -113,6 +75,9 @@ class UnionFind {
 <a id="bundled"></a>
 {% raw %}
 ```cpp
+#line 1 "test/union_find.test.cpp"
+#define PROBLEM "https://onlinejudge.u-aizu.ac.jp/courses/library/3/DSL/1/DSL_1_A"
+
 #line 1 "library/header.hpp"
 
 
@@ -292,6 +257,24 @@ class UnionFind {
         return num_;
     }
 };
+#line 4 "test/union_find.test.cpp"
+
+int main(void) {
+    int n, q;
+    cin >> n >> q;
+    UnionFind uf(n);
+    rep(i, q) {
+        int com, x, y;
+        cin >> com >> x >> y;
+        if (com == 0) {
+            // unite
+            uf.unite(x, y);
+        } else {
+            // find
+            cout << (uf.same(x, y) ? 1 : 0) << '\n';
+        }
+    }
+}
 
 ```
 {% endraw %}

@@ -56,7 +56,7 @@ layout: default
 * :warning: <a href="string_algorithm.hpp.html">library/string_algorithm.hpp</a>
 * :warning: <a href="strongly_connected_component.hpp.html">library/strongly_connected_component.hpp</a>
 * :warning: <a href="suffix_array.hpp.html">library/suffix_array.hpp</a>
-* :warning: <a href="union_find.hpp.html">library/union_find.hpp</a>
+* :heavy_check_mark: <a href="union_find.hpp.html">library/union_find.hpp</a>
 * :warning: <a href="wavelet_matrix.hpp.html">library/wavelet_matrix.hpp</a>
 
 
@@ -66,6 +66,7 @@ layout: default
 * :heavy_check_mark: <a href="../../verify/test/min_cost_flow.test.cpp.html">test/min_cost_flow.test.cpp</a>
 * :heavy_check_mark: <a href="../../verify/test/segment_tree_RMQ.test.cpp.html">test/segment_tree_RMQ.test.cpp</a>
 * :heavy_check_mark: <a href="../../verify/test/segment_tree_RSQ.test.cpp.html">test/segment_tree_RSQ.test.cpp</a>
+* :heavy_check_mark: <a href="../../verify/test/union_find.test.cpp.html">test/union_find.test.cpp</a>
 
 
 ## Code
