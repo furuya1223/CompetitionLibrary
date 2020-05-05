@@ -25,25 +25,22 @@ layout: default
 <link rel="stylesheet" href="../../assets/css/copy-button.css" />
 
 
-# :heavy_check_mark: library/min_cost_flow.hpp
+# :heavy_check_mark: test/min_cost_flow.test.cpp
 
 <a href="../../index.html">Back to top page</a>
 
-* category: <a href="../../index.html#d521f765a49c72507257a2620612ee96">library</a>
-* <a href="{{ site.github.repository_url }}/blob/master/library/min_cost_flow.hpp">View this file on GitHub</a>
-    - Last commit date: 2020-05-04 16:27:14+09:00
+* category: <a href="../../index.html#098f6bcd4621d373cade4e832627b4f6">test</a>
+* <a href="{{ site.github.repository_url }}/blob/master/test/min_cost_flow.test.cpp">View this file on GitHub</a>
+    - Last commit date: 2020-05-05 12:07:31+09:00
 
 
+* see: <a href="https://onlinejudge.u-aizu.ac.jp/courses/library/5/GRL/6/GRL_6_B">https://onlinejudge.u-aizu.ac.jp/courses/library/5/GRL/6/GRL_6_B</a>
 
 
 ## Depends on
 
-* :heavy_check_mark: <a href="header.hpp.html">library/header.hpp</a>
-
-
-## Verified with
-
-* :heavy_check_mark: <a href="../../verify/test/min_cost_flow.test.cpp.html">test/min_cost_flow.test.cpp</a>
+* :heavy_check_mark: <a href="../../library/library/header.hpp.html">library/header.hpp</a>
+* :heavy_check_mark: <a href="../../library/library/min_cost_flow.hpp.html">library/min_cost_flow.hpp</a>
 
 
 ## Code
@@ -51,109 +48,30 @@ layout: default
 <a id="unbundled"></a>
 {% raw %}
 ```cpp
-#include "header.hpp"
+#define PROBLEM "https://onlinejudge.u-aizu.ac.jp/courses/library/5/GRL/6/GRL_6_B"
 
-// ダイクストラver. O(FElogV)
+#include "../library/min_cost_flow.hpp"
 
-class MinCostFlow {
-    struct flowEdge {
-        int to;
-        long long capacity, cost;
-        int reverse_edge;
-        flowEdge(int t, long long cap, long long cos, int rev)
-            : to(t), capacity(cap), cost(cos), reverse_edge(rev) {}
-    };
-    class flowGraph {
-        vector<vector<flowEdge>> edges; // グラフの隣接リスト表現
-      public:
-        flowGraph(int n_) : edges(n_) {}
-        flowGraph() {}
-        void add_edge(int s, int t, long long cap, long long cos) {
-            edges[s].emplace_back(t, cap, cos, (int)edges[t].size());
-            edges[t].emplace_back(s, 0, -cos, (int)edges[s].size() - 1);
-        }
-        vector<flowEdge> &operator[](size_t i) {
-            return edges[i];
-        }
-        int size() const {
-            return edges.size();
-        }
-    };
-
-    flowGraph graph;
-    vector<long long> potential, distance;
-    vector<int> prev_v, prev_e;
-
-  public:
-    MinCostFlow(int n)
-        : graph(n), potential(n), distance(n), prev_v(n), prev_e(n) {}
-
-    // s から t へ容量 cap の辺を追加
-    void add_edge(int s, int t, long long cap, long long cos) {
-        graph.add_edge(s, t, cap, cos);
+int main(void) {
+    int V, E, F;
+    cin >> V >> E >> F;
+    MinCostFlow mcf(V);
+    rep(i, E) {
+        int u, v, c, d;
+        cin >> u >> v >> c >> d;
+        mcf.add_edge(u, v, c, d);
     }
-
-    // s から t への流量 f の最小費用流を求める。不可なら-1
-    int min_cost_flow(int s, int t, int f) {
-        int ans = 0;
-        fill(potential.begin(), potential.end(), 0);
-        while (f > 0) {
-            // ダイクストラ法を用いて最短経路を計算
-            using P_LL_I = pair<long long, int>;
-            priority_queue<P_LL_I, vector<P_LL_I>, greater<P_LL_I>> que;
-            fill(distance.begin(), distance.end(), INFL);
-            distance[s] = 0;
-            que.push(mp(0, s));
-            while (!que.empty()) {
-                long long dist;
-                int v;
-                tie(dist, v) = que.top();
-                que.pop();
-                if (distance[v] < dist) continue;
-                for (int i = 0; i < graph[v].size(); i++) {
-                    flowEdge &e = graph[v][i];
-                    if (e.capacity > 0 &&
-                        distance[e.to] > distance[v] + e.cost + potential[v] -
-                                             potential[e.to]) {
-                        distance[e.to] = distance[v] + e.cost + potential[v] -
-                                         potential[e.to];
-                        prev_v[e.to] = v;
-                        prev_e[e.to] = i;
-                        que.push(mp(distance[e.to], e.to));
-                    }
-                }
-            }
-            if (distance[t] == INFL) {
-                // これ以上流せない
-                return -1;
-            }
-            // potential を更新
-            for (int v = 0; v < graph.size(); v++) potential[v] += distance[v];
-
-            // s-t 最短経路のボトルネック流量の計算
-            long long bottleneck = f;
-            for (int v = t; v != s; v = prev_v[v]) {
-                bottleneck =
-                    min(bottleneck, graph[prev_v[v]][prev_e[v]].capacity);
-            }
-            // s-t 最短経路に沿ってボトルネック流量を流す
-            f -= bottleneck;
-            ans += bottleneck * potential[t];
-            for (int v = t; v != s; v = prev_v[v]) {
-                flowEdge &e = graph[prev_v[v]][prev_e[v]];
-                e.capacity -= bottleneck;
-                graph[v][e.reverse_edge].capacity += bottleneck;
-            }
-        }
-        return ans;
-    }
-};
+    cout << mcf.min_cost_flow(0, V - 1, F) << endl;
+}
 ```
 {% endraw %}
 
 <a id="bundled"></a>
 {% raw %}
 ```cpp
+#line 1 "test/min_cost_flow.test.cpp"
+#define PROBLEM "https://onlinejudge.u-aizu.ac.jp/courses/library/5/GRL/6/GRL_6_B"
+
 #line 1 "library/header.hpp"
 
 
@@ -375,6 +293,19 @@ class MinCostFlow {
         return ans;
     }
 };
+#line 4 "test/min_cost_flow.test.cpp"
+
+int main(void) {
+    int V, E, F;
+    cin >> V >> E >> F;
+    MinCostFlow mcf(V);
+    rep(i, E) {
+        int u, v, c, d;
+        cin >> u >> v >> c >> d;
+        mcf.add_edge(u, v, c, d);
+    }
+    cout << mcf.min_cost_flow(0, V - 1, F) << endl;
+}
 
 ```
 {% endraw %}
