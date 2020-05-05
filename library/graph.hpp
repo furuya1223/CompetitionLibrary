@@ -1,7 +1,9 @@
 #include "header.hpp"
 
-void Dijkstra(Graph<int> graph, int start, vll &cost) {
-    vi prev(graph.size());
+void Dijkstra(const Graph<int> &graph, int start, vector<long long> &cost) {
+    cost.resize(graph.size());
+    fill(cost.begin(), cost.end(), INFL);
+    vector<int> prev(graph.size());
     pql<Pll> Q;
 
     fill(cost.begin(), cost.end(), INFL);
