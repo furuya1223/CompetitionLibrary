@@ -25,25 +25,22 @@ layout: default
 <link rel="stylesheet" href="../../assets/css/copy-button.css" />
 
 
-# :heavy_check_mark: library/strongly_connected_component.hpp
+# :heavy_check_mark: test/strongly_connected_component.test.cpp
 
 <a href="../../index.html">Back to top page</a>
 
-* category: <a href="../../index.html#d521f765a49c72507257a2620612ee96">library</a>
-* <a href="{{ site.github.repository_url }}/blob/master/library/strongly_connected_component.hpp">View this file on GitHub</a>
-    - Last commit date: 2020-05-04 16:27:14+09:00
+* category: <a href="../../index.html#098f6bcd4621d373cade4e832627b4f6">test</a>
+* <a href="{{ site.github.repository_url }}/blob/master/test/strongly_connected_component.test.cpp">View this file on GitHub</a>
+    - Last commit date: 2020-05-06 13:18:06+09:00
 
 
+* see: <a href="https://judge.yosupo.jp/problem/scc">https://judge.yosupo.jp/problem/scc</a>
 
 
 ## Depends on
 
-* :heavy_check_mark: <a href="header.hpp.html">library/header.hpp</a>
-
-
-## Verified with
-
-* :heavy_check_mark: <a href="../../verify/test/strongly_connected_component.test.cpp.html">test/strongly_connected_component.test.cpp</a>
+* :heavy_check_mark: <a href="../../library/library/header.hpp.html">library/header.hpp</a>
+* :heavy_check_mark: <a href="../../library/library/strongly_connected_component.hpp.html">library/strongly_connected_component.hpp</a>
 
 
 ## Code
@@ -51,134 +48,46 @@ layout: default
 <a id="unbundled"></a>
 {% raw %}
 ```cpp
-#include "header.hpp"
+#define PROBLEM "https://judge.yosupo.jp/problem/scc"
 
-class SCCD {
-  public:
-    stack<int> post;
-    vb used;
+#include "../library/strongly_connected_component.hpp"
 
-    inline void dfs(int pos, int par, Graph<int> &g) {
-        used[pos] = true;
-        for (const auto &e : g[pos]) {
-            if (used[e.to]) continue;
-            dfs(e.to, pos, g);
-        }
-        post.push(pos);
+int main() {
+    int N, M;
+    cin >> N >> M;
+    Graph<int> G(N, true);
+    rep(i, M) {
+        int a, b;
+        cin >> a >> b;
+        G.add_edge(a, b, 1);
     }
 
-    inline void dfsrev(int pos, int par, Graph<int> &rev, vi &group) {
-        used[pos] = true;
-        group.push_back(pos);
-        for (const auto &e : rev[pos]) {
-            if (used[e.to]) continue;
-            dfsrev(e.to, pos, rev, group);
-        }
-    }
-
-    Graph<int> SCC(Graph<int> &G, vvi &scc, vi &n2g, Graph<int> &dag) {
-        int n = G.size();
-        Graph<int> rev(n, true);
-        // 逆辺グラフの作成
-        rep(i, n) {
-            rep(j, G[i].size()) {
-                auto e = G[i][j];
-                rev.add_edge(e.to, e.from, 1);
-            }
-        }
-
-        // 1 回目の DFS
-        used = vb(n, false);
-        rep(i, n) {
-            if (!used[i]) dfs(i, -1, G);
-        }
-
-        // 2 回目の DFS
-        fill(all(used), false);
-        while (!post.empty()) {
-            int pos = post.top();
-            post.pop();
-            if (used[pos]) continue;
-            vi group;
-            dfsrev(pos, -1, rev, group);
-            scc.push_back(group);
-        }
-
-        // 頂点番号から強連結成分の番号を得る辞書の作成
-        rep(i, scc.size()) {
-            rep(j, scc[i].size()) {
-                n2g[scc[i][j]] = i;
-            }
-        }
-
-        dag = Graph<int>(scc.size(), true);
-        set<pair<int, int>> usedEdges;
-
-        // DAG を作成
-        rep(i, n) {
-            for (const auto &e : G[i]) {
-                int s = n2g[e.from];
-                int t = n2g[e.to];
-                if (usedEdges.find(mp(s, t)) == usedEdges.end() && s != t) {
-                    dag.add_edge(s, t, 1);
-                    usedEdges.insert(mp(s, t));
-                }
-            }
-        }
-        return dag;
-    }
-};
-
-class SAT {
-    bool solved = false;
-
-  public:
-    int num;
-    Graph<int> graph, dag;
+    SCCD sccd;
     vvi scc;
-    vi n2g;
+    vi n2g(N);
+    Graph<int> dag;
+    sccd.SCC(G, scc, n2g, dag);
 
-    SAT(int n) : num(n), graph(2 * n, true), n2g(2 * num) {}
-
-    void add_constraint(bool x_is_true, int x, bool y_is_true, int y) {
-        assert(0 <= x && x < num && 0 <= y && y < num);
-        if (!x_is_true) x += num;
-        if (!y_is_true) y += num;
-        graph.add_edge((x + num) % (2 * num), y, 1); // not x -> y
-        graph.add_edge((y + num) % (2 * num), x, 1); // not y -> x
-    }
-
-    void solve() {
-        SCCD sccd;
-        sccd.SCC(graph, scc, n2g, dag);
-        solved = true;
-    }
-
-    bool get_satisfiability() {
-        if (!solved) solve();
-        for (int i = 0; i < num; i++) {
-            if (n2g[i] == n2g[i + num]) return false;
+    cout << scc.size() << endl;
+    rep(i, scc.size()) {
+        cout << scc[i].size();
+        rep(j, scc[i].size()) {
+            cout << " " << scc[i][j];
         }
-        return true;
+        cout << endl;
     }
 
-    bool get_assignment(vector<bool> &assignment) {
-        assignment.resize(num);
-        if (!solved) solve();
-        vector<bool> ret(num);
-        for (int i = 0; i < num; i++) {
-            if (n2g[i] == n2g[i + num]) return false;
-            assignment[i] = n2g[i] > n2g[i + num];
-        }
-        return true;
-    }
-};
+    return 0;
+}
 ```
 {% endraw %}
 
 <a id="bundled"></a>
 {% raw %}
 ```cpp
+#line 1 "test/strongly_connected_component.test.cpp"
+#define PROBLEM "https://judge.yosupo.jp/problem/scc"
+
 #line 1 "library/header.hpp"
 
 
@@ -425,6 +334,35 @@ class SAT {
         return true;
     }
 };
+#line 4 "test/strongly_connected_component.test.cpp"
+
+int main() {
+    int N, M;
+    cin >> N >> M;
+    Graph<int> G(N, true);
+    rep(i, M) {
+        int a, b;
+        cin >> a >> b;
+        G.add_edge(a, b, 1);
+    }
+
+    SCCD sccd;
+    vvi scc;
+    vi n2g(N);
+    Graph<int> dag;
+    sccd.SCC(G, scc, n2g, dag);
+
+    cout << scc.size() << endl;
+    rep(i, scc.size()) {
+        cout << scc[i].size();
+        rep(j, scc[i].size()) {
+            cout << " " << scc[i][j];
+        }
+        cout << endl;
+    }
+
+    return 0;
+}
 
 ```
 {% endraw %}
