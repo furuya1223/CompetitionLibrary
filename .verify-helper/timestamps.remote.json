@@ -2,6 +2,7 @@
 "test/dijkstra.test.cpp": "2020-05-06 10:10:17 +0900",
 "test/max_flow_dinic.test.cpp": "2020-05-05 12:01:30 +0900",
 "test/min_cost_flow.test.cpp": "2020-05-05 12:07:31 +0900",
+"test/ntt.test.cpp": "2020-05-06 10:54:59 +0900",
 "test/segment_tree_RMQ.test.cpp": "2020-05-04 16:27:14 +0900",
 "test/segment_tree_RSQ.test.cpp": "2020-05-04 16:27:14 +0900",
 "test/union_find.test.cpp": "2020-05-05 12:55:21 +0900"
