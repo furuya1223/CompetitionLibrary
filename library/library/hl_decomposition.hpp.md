@@ -25,7 +25,7 @@ layout: default
 <link rel="stylesheet" href="../../assets/css/copy-button.css" />
 
 
-# :warning: library/hl_decomposition.hpp
+# :heavy_check_mark: library/hl_decomposition.hpp
 
 <a href="../../index.html">Back to top page</a>
 
@@ -39,6 +39,11 @@ layout: default
 ## Depends on
 
 * :heavy_check_mark: <a href="header.hpp.html">library/header.hpp</a>
+
+
+## Verified with
+
+* :heavy_check_mark: <a href="../../verify/test/hl_decomposition_edge.test.cpp.html">test/hl_decomposition_edge.test.cpp</a>
 
 
 ## Code

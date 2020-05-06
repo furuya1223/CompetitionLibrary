@@ -44,7 +44,7 @@ layout: default
 * :warning: <a href="fft.hpp.html">library/fft.hpp</a>
 * :warning: <a href="geometry.hpp.html">library/geometry.hpp</a>
 * :warning: <a href="graph.hpp.html">library/graph.hpp</a>
-* :warning: <a href="hl_decomposition.hpp.html">library/hl_decomposition.hpp</a>
+* :heavy_check_mark: <a href="hl_decomposition.hpp.html">library/hl_decomposition.hpp</a>
 * :warning: <a href="library.hpp.html">library/library.hpp</a>
 * :warning: <a href="low_link.hpp.html">library/low_link.hpp</a>
 * :warning: <a href="lowest_common_ancestor.hpp.html">library/lowest_common_ancestor.hpp</a>
@@ -65,6 +65,7 @@ layout: default
 ## Verified with
 
 * :heavy_check_mark: <a href="../../verify/test/dijkstra.test.cpp.html">test/dijkstra.test.cpp</a>
+* :heavy_check_mark: <a href="../../verify/test/hl_decomposition_edge.test.cpp.html">test/hl_decomposition_edge.test.cpp</a>
 * :heavy_check_mark: <a href="../../verify/test/max_flow_dinic.test.cpp.html">test/max_flow_dinic.test.cpp</a>
 * :heavy_check_mark: <a href="../../verify/test/min_cost_flow.test.cpp.html">test/min_cost_flow.test.cpp</a>
 * :heavy_check_mark: <a href="../../verify/test/ntt.test.cpp.html">test/ntt.test.cpp</a>
