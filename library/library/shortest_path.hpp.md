@@ -31,7 +31,7 @@ layout: default
 
 * category: <a href="../../index.html#d521f765a49c72507257a2620612ee96">library</a>
 * <a href="{{ site.github.repository_url }}/blob/master/library/shortest_path.hpp">View this file on GitHub</a>
-    - Last commit date: 2020-05-05 14:06:25+09:00
+    - Last commit date: 2020-05-06 10:10:17+09:00
 
 
 
@@ -102,9 +102,9 @@ void Dijkstra(vvd graph, int start, vd &cost, int V) {
     }
 }
 
-bool BellmanFord(vvPi graph, int start, vi &cost, int V) {
-    vi prev(V);
-    vb visitable(V, false);
+bool BellmanFord(vvPi graph, int start, vector<long long> &cost) {
+    vi prev(graph.size());
+    vb visitable(graph.size(), false);
     int k = 1;
     int visitable_num = 0;
 
@@ -121,7 +121,7 @@ bool BellmanFord(vvPi graph, int start, vi &cost, int V) {
         }
     }
 
-    rep(i, V) {
+    rep(i, graph.size()) {
         if (visitable[i]) visitable_num++;
     }
 
@@ -130,7 +130,7 @@ bool BellmanFord(vvPi graph, int start, vi &cost, int V) {
 
     while (true) {
         bool flag = true;
-        rep(i, V) rep(j, graph[i].size()) {
+        rep(i, graph.size()) rep(j, graph[i].size()) {
             if (visitable[i] && cost[graph[i][j].first] > cost[i] + graph[i][j].second) {
                 cost[graph[i][j].first] = cost[i] + graph[i][j].second;
                 prev[graph[i][j].first] = i;
@@ -338,9 +338,9 @@ void Dijkstra(vvd graph, int start, vd &cost, int V) {
     }
 }
 
-bool BellmanFord(vvPi graph, int start, vi &cost, int V) {
-    vi prev(V);
-    vb visitable(V, false);
+bool BellmanFord(vvPi graph, int start, vector<long long> &cost) {
+    vi prev(graph.size());
+    vb visitable(graph.size(), false);
     int k = 1;
     int visitable_num = 0;
 
@@ -357,7 +357,7 @@ bool BellmanFord(vvPi graph, int start, vi &cost, int V) {
         }
     }
 
-    rep(i, V) {
+    rep(i, graph.size()) {
         if (visitable[i]) visitable_num++;
     }
 
@@ -366,7 +366,7 @@ bool BellmanFord(vvPi graph, int start, vi &cost, int V) {
 
     while (true) {
         bool flag = true;
-        rep(i, V) rep(j, graph[i].size()) {
+        rep(i, graph.size()) rep(j, graph[i].size()) {
             if (visitable[i] && cost[graph[i][j].first] > cost[i] + graph[i][j].second) {
                 cost[graph[i][j].first] = cost[i] + graph[i][j].second;
                 prev[graph[i][j].first] = i;
