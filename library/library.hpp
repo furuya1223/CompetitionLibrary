@@ -38,46 +38,45 @@ int gcd(int a, int b) {
         return gcd(b, a % b);
 }
 
-// 階乗・組み合わせのモジュラ逆数
+// 階乗・組み合わせの mod 逆数
 class FactorialMod {
-    // モジュラ逆数を求める(modが素数と仮定)
-    void ModInv() {
-        inv[0] = 0;
-        inv[1] = 1;
+    // 逆元を計算 (modが素数と仮定)
+    void calc_inverse() {
+        inverse[0] = 0;
+        inverse[1] = 1;
         for (int i = 2; i <= n; i++) {
-            inv[i] = mod - ((mod / i) * inv[mod % i] % mod);
+            inverse[i] = mod - ((mod / i) * inverse[mod % i] % mod);
         }
     }
 
-    // n!をmodで割った余り
-    void FacInv() {
-        fac[0] = facinv[0] = 1;
+    // n! を mod で割った余りと逆元を計算
+    void calc_factorial_inverse() {
+        factorial[0] = factorial_inverse[0] = 1;
         for (int i = 1; i <= n; i++) {
-            fac[i] = (fac[i - 1] * i) % mod;
-            facinv[i] = (facinv[i - 1] * (int)inv[i]) % mod;
+            factorial[i] = (factorial[i - 1] * i) % mod;
+            factorial_inverse[i] = (factorial_inverse[i - 1] * inverse[i]) % mod;
         }
     }
 
   public:
-    int n;
-    int mod;
-    vector<long long> inv;
-    vector<long long> fac;
-    vector<long long> facinv;
+    int n;                               // 扱う最大の値
+    int mod;                             // mod の法（素数）
+    vector<long long> inverse;           // 逆元
+    vector<long long> factorial;         // 階乗
+    vector<long long> factorial_inverse; // 階乗の逆元
 
     FactorialMod(int _n, int _mod)
-        : n(_n), mod(_mod), inv(vector<long long>(_n + 1)),
-          fac(vector<long long>(_n + 1)), facinv(vector<long long>(_n + 1)) {
-        ModInv();
-        FacInv();
+        : n(_n), mod(_mod), inverse(_n + 1), factorial(_n + 1), factorial_inverse(_n + 1) {
+        calc_inverse();
+        calc_factorial_inverse();
     }
 
-    ll CombiMod(int r, int k) {
+    long long conbination_mod(int r, int k) {
         if (r == 0 && k == 0) return 1;
         if (r <= 0 || k < 0 || k > r) return 0;
         if (k == 0) return 1;
 
-        return (((fac[r] * facinv[k]) % mod) * facinv[r - k]) % mod;
+        return (((factorial[r] * factorial_inverse[k]) % mod) * factorial_inverse[r - k]) % mod;
     }
 };
 
@@ -204,8 +203,7 @@ long long merge_count(vector<long long> &a) {
 }
 
 // LIS O(NlogN)
-#define index_of(as, x)                                                        \
-    distance(as.begin(), lower_bound(as.begin(), as.end(), x))
+#define index_of(as, x) distance(as.begin(), lower_bound(as.begin(), as.end(), x))
 vector<int> lis(const vector<int> &a) {
     const int n = a.size();
     vector<int> A(n, INF);
@@ -233,3 +231,27 @@ void makePrimeTable(vector<bool> &prime) {
         }
     }
 }
+
+// 素数の個数 (https://www.benricho.org/primenumber/kazu.html)
+// 10 まで　	4
+// 50 まで　	15
+// 100 まで　	25
+// 500 まで　	95
+// 1,000 まで　	168
+// 2,000 まで　	303
+// 3,000 まで　	430
+// 4,000 まで　	550
+// 5,000 まで　	669
+// 10,000 [1万] まで　	1,229
+// 100,000 [10万] まで　	9,592
+// 1,000,000 [百万] まで　	78,498
+// 10,000,000 [1千万] まで　	664,579
+// 50,000,000 [5千万] まで　	3,001,134
+// 100,000,000 [1億] まで　	5,761,455
+// 150,000,000 [1億5千万] まで　	8,444,396
+// 200,000,000 [2億] まで　	11,078,937
+// 1,000,000,000 [10億] まで　	50,847,534
+// 10,000,000,000 [100億] まで　	455,052,511
+// 100,000,000,000 [1千億] まで　	4,118,054,813
+// 1,000,000,000,000 [1兆] まで　	37,607,912,018
+// 10,000,000,000,000 [10兆] まで　	346,065,536,839

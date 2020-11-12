@@ -2,44 +2,7 @@
 #include "header.hpp"
 
 template <class T>
-struct HLDecomposition {
-    Graph<T> &g;
-    int n;
-    vector<vector<int>> chains; // chain の列。head の浅い順
-    vector<int> parent;         // 親の頂点番号。根なら -1
-    vector<int> subsize;        // 自身を根とする部分木のサイズ
-    vector<int> depth;          // 根からの距離
-    vector<int> head;           // 自身を含む chain の先頭の頂点
-    vector<int> last;           // 自身を含む chain の末尾の頂点
-    vector<int> next;           // 自身が属する chain での次の頂点。範囲外なら -1
-    vector<int> prev;           // 自身が属する chain での前の頂点。範囲外なら -1
-    vector<int> chain;          // 自身が属する chain 番号
-    vector<int> idx;            // 自身が属する chain での自身の番号
-    vector<int> encode; // 元の頂点番号をパスクエリ用に並べ替えた番号に変える
-    vector<int> decode; // パスクエリ用に並べ替えた頂点番号を元の番号に変える
-
-    HLDecomposition(Graph<T> &g_, int r = -1)
-        : g(g_), n(g.size()), chains(0), parent(n, 0), subsize(n, 0), depth(n, -1), head(n, 0),
-          last(n, 0), next(n, -1), prev(n, -1), chain(n, -1), idx(n, 0), encode(n), decode(n) {
-        if (r != -1) decompose(r);
-    }
-
-    // 頂点 v が属する chain の親頂点を返す
-    // u から根まで登りたいときは
-    // for(; u != -1; u = climb(u))
-    int climb(int v) const {
-        return parent[head[v]];
-    }
-
-    // chains[first][second] = v
-    std::pair<int, int> get_index(int v) const {
-        return std::make_pair(chain[v], idx[v]);
-    }
-
-    int size() const {
-        return n;
-    }
-
+class HLDecomposition {
     void decompose(const int root) {
         stack<int> stk; // DFS 用スタック
         stk.push(root);
@@ -119,6 +82,54 @@ struct HLDecomposition {
         }
     }
 
+  public:
+    Graph<T> &g;
+    int n;
+    vector<vector<int>> chains; // chain の列。head の浅い順
+    vector<int> parent;         // 親の頂点番号。根なら -1
+    vector<int> subsize;        // 自身を根とする部分木のサイズ
+    vector<int> depth;          // 根からの距離
+    vector<int> head;           // 自身を含む chain の先頭の頂点
+    vector<int> last;           // 自身を含む chain の末尾の頂点
+    vector<int> next;           // 自身が属する chain での次の頂点。範囲外なら -1
+    vector<int> prev;           // 自身が属する chain での前の頂点。範囲外なら -1
+    vector<int> chain;          // 自身が属する chain 番号
+    vector<int> idx;            // 自身が属する chain での自身の番号
+    vector<int> encode; // 元の頂点番号をパスクエリ用に並べ替えた番号に変える
+    vector<int> decode; // パスクエリ用に並べ替えた頂点番号を元の番号に変える
+
+    HLDecomposition(Graph<T> &g_, int r = -1)
+        : g(g_), n(g.size()), chains(0), parent(n, 0), subsize(n, 0), depth(n, -1), head(n, 0),
+          last(n, 0), next(n, -1), prev(n, -1), chain(n, -1), idx(n, 0), encode(n), decode(n) {
+        if (r != -1) decompose(r);
+    }
+
+    // 頂点 v が属する chain の親頂点を返す
+    // u から根まで登りたいときは
+    // for(; u != -1; u = climb(u))
+    int climb(int v) const {
+        return parent[head[v]];
+    }
+
+    // chains[first][second] = v
+    std::pair<int, int> get_index(int v) const {
+        return std::make_pair(chain[v], idx[v]);
+    }
+
+    int size() const {
+        return n;
+    }
+
+    // encode の順序に並べ替えたものを作成
+    template<class U>
+    vector<U> permute(vector<U> arr){
+        vector<U> result(arr.size());
+        for(int i = 0; i < arr.size(); i++){
+            result[encode[i]] = arr[i];
+        }
+        return result;
+    }
+
     int lca(int u, int v) {
         // 同じ chain に属するまで、head が深い側の頂点を登らせる
         while (chain[u] != chain[v]) {
@@ -133,7 +144,7 @@ struct HLDecomposition {
 
     // 頂点が値を持つパスクエリ用の区間列（閉区間）を encode して返す
     // LCA は result.back()[0]（辺が値を持つ場合は LCA を除く）
-    vector<pair<int, int>> queries(int u, int v) {
+    vector<pair<int, int>> queries(int u, int v, bool remove_lca = false) {
         vector<pair<int, int>> result;
         while (chain[u] != chain[v]) {
             if (depth[head[u]] > depth[head[v]]) {
@@ -144,7 +155,11 @@ struct HLDecomposition {
                 v = climb(v);
             }
         }
-        result.push_back(minmax(encode[u], encode[v]));
+        if(remove_lca){
+            result.push_back(minmax(encode[u] + 1, encode[v]));
+        }else{
+            result.push_back(minmax(encode[u], encode[v]));
+        }
         return result;
     }
 };

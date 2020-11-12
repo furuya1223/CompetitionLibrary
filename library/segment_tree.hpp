@@ -90,12 +90,12 @@ class LazySegTree {
     vector<U> lazy;
     vector<int> width;
 
+    T def, lazy_def;
+
     function<T(T, T)> operation;
     function<T(T, U)> adapt_lazy;
     function<U(U, U)> merge_lazy;
     function<U(U, int)> multiply_lazy;
-
-    T init, def, lazy_def;
 
     // ツリー上のノード k に lazy 値 v をセット
     void set_lazy(int k, U v) {
@@ -116,36 +116,36 @@ class LazySegTree {
     }
 
     // 区間[a,b)の区間クエリ。ノードk=[l,r)に着目している。
-    long long _query(int a, int b, int k, int l, int r) {
+    T _query(int a, int b, int k, int l, int r) {
         if (r <= a || b <= l) return def;    // 交差しない
         if (a <= l && r <= b) return dat[k]; // a,l,r,bの順で完全に含まれる
         push(k);
-        long long c1 = _query(a, b, 2 * k + 1, l, (l + r) / 2); // 左の子
-        long long c2 = _query(a, b, 2 * k + 2, (l + r) / 2, r); // 右の子
+        T c1 = _query(a, b, 2 * k + 1, l, (l + r) / 2); // 左の子
+        T c2 = _query(a, b, 2 * k + 2, (l + r) / 2, r); // 右の子
         return operation(c1, c2);
     }
 
   public:
-    // _n:必要サイズ, _def:初期値, _operation:クエリ関数,
+    // _n:必要サイズ, _def:初期値かつ単位元, _operation:クエリ関数,
     // _adapt_lazy:区間作用素適用関数, _merge_lazy:区間作用素マージ関数,
     // _multiply_lazy:作用素を要素数で変形
     LazySegTree(
-        size_t _n, T _init, T _def, T _lazy_def, function<T(T, T)> _operation,
-        function<T(T, U)> _adapt_lazy, function<U(U, U)> _merge_lazy,
+        size_t _n, T _def, T _lazy_def, function<T(T, T)> _operation, function<T(T, U)> _adapt_lazy,
+        function<U(U, U)> _merge_lazy,
         function<U(U, int)> _multiply_lazy = [](U u, int n) { return u; })
-        : init(_init), def(_def), lazy_def(_lazy_def), operation(_operation),
-          adapt_lazy(_adapt_lazy), merge_lazy(_merge_lazy), multiply_lazy(_multiply_lazy) {
+        : def(_def), lazy_def(_lazy_def), operation(_operation), adapt_lazy(_adapt_lazy),
+          merge_lazy(_merge_lazy), multiply_lazy(_multiply_lazy) {
         n = 1;
         while (n < _n) n *= 2;
-        dat = vector<long long>(2 * n - 1, init);
-        lazy = vector<long long>(2 * n - 1, lazy_def);
+        dat = vector<T>(2 * n - 1, def);
+        lazy = vector<U>(2 * n - 1, lazy_def);
         width = vector<int>(2 * n - 1);
         width[0] = n;
         repr(i, 1, 2 * n - 1) width[i] = width[(i - 1) / 2] / 2;
     }
 
     // 区間[a,b)にvを作用させる
-    void range_operation(int a, int b, long long v, int k = 0, int l = 0, int r = -1) {
+    void range_operation(int a, int b, T v, int k = 0, int l = 0, int r = -1) {
         if (r == -1) r = n;
         if (r <= a || b <= l) return; // 交差しない
         if (a <= l && r <= b) {       // a,l,r,bの順で完全に含まれる
@@ -159,12 +159,12 @@ class LazySegTree {
     }
 
     // [a, b)の区間クエリを実行
-    long long query(int a, int b) {
+    T query(int a, int b) {
         return _query(a, b, 0, 0, n);
     }
 
     //  添字でアクセス
-    long long operator[](int i) {
+    T operator[](int i) {
         return query(i, i + 1);
     }
 };
